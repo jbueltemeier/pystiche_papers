@@ -11,6 +11,7 @@ __all__ = [
     "WCTAutoEncoder",
 ]
 
+
 class _AutoEncoder(pystiche.Module):
     def __init__(self, encoder: enc.Encoder, decoder: enc.Encoder,) -> None:
         super().__init__()
@@ -35,6 +36,7 @@ class _AutoEncoder(pystiche.Module):
 
 class _TransformAutoEncoder(_AutoEncoder):
     target_enc: torch.Tensor
+
     def __init__(
         self, encoder: enc.Encoder, decoder: enc.Encoder, weight: float = 0.6,
     ) -> None:

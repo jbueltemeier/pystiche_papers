@@ -34,7 +34,7 @@ def coloring(
     impl_params: bool = True,
     eps: float = 0.00001,
 ) -> torch.Tensor:
-    if len(whitened_enc.shape) == 4:
+    if len(whitened_enc.shape) != 2:
         channels = extract_num_channels(whitened_enc)
         whitened_enc = whitened_enc.view(channels, -1)
     channels = extract_num_channels(style_enc)

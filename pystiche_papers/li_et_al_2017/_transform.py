@@ -10,7 +10,7 @@ __all__ = [
 
 
 def whitening(
-    enc: torch.Tensor, impl_params: bool = True, eps: float = 0.00001
+    enc: torch.Tensor, reduce_channels: bool = True, eps: float = 0.00001
 ) -> torch.Tensor:
     channels = extract_num_channels(enc)
     width, height = extract_image_size(enc)
@@ -20,7 +20,7 @@ def whitening(
     cov = torch.mm(mean_enc, mean_enc.t()).div((width * height) - 1)
     u, s, v = torch.svd(cov, some=False)
 
-    reduced_channels = bisect.bisect_left(list(s), eps) if impl_params else channels
+    reduced_channels = bisect.bisect_left(list(s), eps) if reduce_channels else channels
     d = (s[0:reduced_channels]).pow(-0.5)
 
     transform = torch.mm(v[:, 0:reduced_channels], torch.diag(d))
@@ -31,7 +31,7 @@ def whitening(
 def coloring(
     whitened_enc: torch.Tensor,
     style_enc: torch.Tensor,
-    impl_params: bool = True,
+    reduce_channels: bool = True,
     eps: float = 0.00001,
 ) -> torch.Tensor:
     if len(whitened_enc.shape) != 2:
@@ -48,7 +48,7 @@ def coloring(
 
     reduced_channels = (
         bisect.bisect_left(list(style_s), eps)
-        if impl_params
+        if reduce_channels
         else extract_num_channels(whitened_enc)
     )
     style_d = (style_s[0:reduced_channels]).pow(0.5)
@@ -63,9 +63,9 @@ def wct(
     content_enc: torch.Tensor,
     style_enc: torch.Tensor,
     alpha: float,
-    impl_params: bool = True,
+    reduce_channels: bool = True,
 ) -> torch.Tensor:
-    whitened_enc = whitening(content_enc, impl_params=impl_params)
-    colored_enc = coloring(whitened_enc, style_enc, impl_params=impl_params)
+    whitened_enc = whitening(content_enc, reduce_channels=reduce_channels)
+    colored_enc = coloring(whitened_enc, style_enc, reduce_channels=reduce_channels)
     colored_enc = colored_enc.view_as(content_enc)
     return alpha * colored_enc + (1.0 - alpha) * content_enc

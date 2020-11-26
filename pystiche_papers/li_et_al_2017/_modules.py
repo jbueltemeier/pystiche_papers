@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Callable, Sequence, Tuple, Union, cast, Iterator
+from typing import Callable, Sequence, Tuple, Union, cast
 
 import torch
 
@@ -7,9 +7,7 @@ import pystiche
 import pystiche_papers.li_et_al_2017 as paper
 from pystiche import enc
 
-__all__ = [
-    "WCTAutoEncoder", "TransformAutoEncoderContainer"
-]
+__all__ = ["WCTAutoEncoder", "TransformAutoEncoderContainer"]
 
 
 class _AutoEncoder(pystiche.Module):
@@ -65,25 +63,46 @@ class _TransformAutoEncoder(_AutoEncoder):
 
 
 class WCTAutoEncoder(_TransformAutoEncoder):
+    def __init__(
+        self,
+        encoder: enc.Encoder,
+        decoder: enc.Encoder,
+        weight: float = 0.6,
+        impl_params: bool = True,
+    ) -> None:
+        self.reduce_channels = impl_params
+        super().__init__(encoder, decoder, weight=weight)
+
     def transform(self, enc: torch.Tensor, target_enc: torch.Tensor) -> torch.Tensor:
-        return paper.wct(enc, target_enc, self.weight)
+        return paper.wct(
+            enc, target_enc, self.weight, reduce_channels=self.reduce_channels
+        )
 
 
 class TransformAutoEncoderContainer(pystiche.Module):
     def __init__(
         self,
         multi_layer_encoder: enc.MultiLayerEncoder,
-        decoders: Sequence[Tuple[str, enc.Encoder]],
-        get_single_autoencoder: Callable[
-            [enc.Encoder, enc.Encoder], _TransformAutoEncoder
+        decoders: Sequence[
+            Tuple[str, enc.Encoder]
+        ],  # TODO: Order is important. Add sort and parameter reverse order?
+        get_autoencoder: Callable[
+            [enc.Encoder, enc.Encoder, float], _TransformAutoEncoder
         ],
+        level_weights: Union[float, Sequence[float]] = 0.6,
     ) -> None:
-        def get_autoencoder(layer: str, decoder: enc.Encoder) -> _TransformAutoEncoder:
+        if type(level_weights) == float:
+            level_weights = cast(Sequence[float], [level_weights] * len(decoders))
+
+        def get_single_autoencoder(
+            layer: str, decoder: enc.Encoder, weight: float
+        ) -> _TransformAutoEncoder:
             encoder = multi_layer_encoder.extract_encoder(layer)
-            return get_single_autoencoder(encoder, decoder)
+            return get_autoencoder(encoder, decoder, weight)
 
         named_autoencoder = [
-            (name, get_autoencoder(name, decoder)) for name, decoder in decoders
+            (name, get_single_autoencoder(name, decoder, weight))
+            for (name, decoder), weight in zip(decoders, cast(Sequence, level_weights))
         ]
         super().__init__()
         self.add_named_modules(named_autoencoder)
@@ -98,7 +117,30 @@ class TransformAutoEncoderContainer(pystiche.Module):
         for autoencoder in self.children():
             cast(_TransformAutoEncoder, autoencoder).set_target_image(image)
 
-    def forward(
-            self, input_image: torch.Tensor
-    ) -> torch.Tensor:
+    def forward(self, input_image: torch.Tensor) -> torch.Tensor:
         return self.process_input_image(input_image)
+
+
+def wct_transformer(
+    style_image: torch.Tensor, impl_params: bool = True
+) -> TransformAutoEncoderContainer:
+    multi_layer_encoder = enc.vgg19_multi_layer_encoder()
+    # TODO: set the right decoders
+    decoder1 = enc.SequentialEncoder([torch.nn.Conv2d(3, 3, 1),])
+    decoder2 = enc.SequentialEncoder(
+        [torch.nn.Conv2d(3, 3, 1), torch.nn.Conv2d(3, 3, 1),]
+    )
+
+    decoders = [("conv2_1", decoder2), ("conv1_1", decoder1)]
+
+    def get_autoencoder(
+        encoder: enc.Encoder, decoder: enc.Encoder, weight: float
+    ) -> WCTAutoEncoder:
+        return WCTAutoEncoder(encoder, decoder, weight=weight, impl_params=impl_params)
+
+    transformer = TransformAutoEncoderContainer(
+        multi_layer_encoder, decoders, get_autoencoder
+    )
+    transformer.set_target_image(style_image)
+
+    return transformer

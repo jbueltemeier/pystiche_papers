@@ -4,6 +4,10 @@ import torch
 
 from ._modules import TransformAutoEncoderContainer, wct_transformer
 
+__all__ = [
+    "stylization",
+]
+
 
 def stylization(
     input_image: torch.Tensor,

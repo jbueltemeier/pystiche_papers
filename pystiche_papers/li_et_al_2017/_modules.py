@@ -121,9 +121,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
         return self.process_input_image(input_image)
 
 
-def wct_transformer(
-    style_image: torch.Tensor, impl_params: bool = True
-) -> TransformAutoEncoderContainer:
+def wct_transformer(impl_params: bool = True) -> TransformAutoEncoderContainer:
     multi_layer_encoder = enc.vgg19_multi_layer_encoder()
     # TODO: set the right decoders
     decoder1 = enc.SequentialEncoder([torch.nn.Conv2d(3, 3, 1),])
@@ -138,9 +136,4 @@ def wct_transformer(
     ) -> WCTAutoEncoder:
         return WCTAutoEncoder(encoder, decoder, weight=weight, impl_params=impl_params)
 
-    transformer = TransformAutoEncoderContainer(
-        multi_layer_encoder, decoders, get_autoencoder
-    )
-    transformer.set_target_image(style_image)
-
-    return transformer
+    return TransformAutoEncoderContainer(multi_layer_encoder, decoders, get_autoencoder)

@@ -26,9 +26,7 @@ class _AutoEncoder(pystiche.Module):
     def enc_to_output_image(self, enc: torch.Tensor) -> torch.Tensor:
         return cast(torch.Tensor, self.decoder(enc))
 
-    def forward(
-        self, input_image: torch.Tensor
-    ) -> Union[torch.Tensor, pystiche.LossDict]:
+    def forward(self, input_image: torch.Tensor) -> torch.Tensor:
         return self.process_input_image(input_image)
 
 
@@ -124,12 +122,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
 def wct_transformer(impl_params: bool = True) -> TransformAutoEncoderContainer:
     multi_layer_encoder = enc.vgg19_multi_layer_encoder()
     # TODO: set the right decoders
-    decoder1 = enc.SequentialEncoder([torch.nn.Conv2d(3, 3, 1),])
-    decoder2 = enc.SequentialEncoder(
-        [torch.nn.Conv2d(3, 3, 1), torch.nn.Conv2d(3, 3, 1),]
-    )
-
-    decoders = [("conv2_1", decoder2), ("conv1_1", decoder1)]
+    decoders = [("conv5_1"), ("conv4_1"), ("conv3_1"), ("conv2_1"), ("conv1_1")]
 
     def get_autoencoder(
         encoder: enc.Encoder, decoder: enc.Encoder, weight: float

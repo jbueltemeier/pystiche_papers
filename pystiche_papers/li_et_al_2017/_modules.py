@@ -34,10 +34,9 @@ class _TransformAutoEncoder(_AutoEncoder):
     target_enc: torch.Tensor
 
     def __init__(
-        self, encoder: enc.Encoder, decoder: enc.Encoder, weight: float = 0.6,
+        self, encoder: enc.Encoder, decoder: enc.Encoder
     ) -> None:
         super().__init__(encoder, decoder)
-        self.weight = weight
 
     def process_input_image(self, image: torch.Tensor) -> torch.Tensor:
         target_enc = self.target_enc
@@ -65,11 +64,12 @@ class WCTAutoEncoder(_TransformAutoEncoder):
         self,
         encoder: enc.Encoder,
         decoder: enc.Encoder,
-        weight: float = 0.6,
+        weight: float = 1.0,
         impl_params: bool = True,
     ) -> None:
         self.reduce_channels = impl_params
-        super().__init__(encoder, decoder, weight=weight)
+        self.weight = weight
+        super().__init__(encoder, decoder)
 
     def transform(self, enc: torch.Tensor, target_enc: torch.Tensor) -> torch.Tensor:
         return paper.wct(
@@ -87,7 +87,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
         get_autoencoder: Callable[
             [enc.Encoder, enc.Encoder, float], _TransformAutoEncoder
         ],
-        level_weights: Union[float, Sequence[float]] = 0.6,
+        level_weights: Union[float, Sequence[float]] = 1.0,
     ) -> None:
         if type(level_weights) == float:
             level_weights = cast(Sequence[float], [level_weights] * len(decoders))
@@ -122,11 +122,17 @@ class TransformAutoEncoderContainer(pystiche.Module):
 def wct_transformer(impl_params: bool = True) -> TransformAutoEncoderContainer:
     multi_layer_encoder = enc.vgg19_multi_layer_encoder()
     # TODO: set the right decoders
-    decoders = [("conv5_1"), ("conv4_1"), ("conv3_1"), ("conv2_1"), ("conv1_1")]
+    decoder1_1 = None
+    decoder2_1 = None
+    decoder3_1 = None
+    decoder4_1 = None
+    decoder5_1 = None
+    decoders = [("conv5_1", decoder5_1), ("conv4_1", decoder4_1), ("conv3_1", decoder3_1), ("conv2_1", decoder2_1), ("conv1_1", decoder1_1)]
 
+    level_weights = 0.6
     def get_autoencoder(
         encoder: enc.Encoder, decoder: enc.Encoder, weight: float
     ) -> WCTAutoEncoder:
         return WCTAutoEncoder(encoder, decoder, weight=weight, impl_params=impl_params)
 
-    return TransformAutoEncoderContainer(multi_layer_encoder, decoders, get_autoencoder)
+    return TransformAutoEncoderContainer(multi_layer_encoder, decoders, get_autoencoder, level_weights=level_weights)

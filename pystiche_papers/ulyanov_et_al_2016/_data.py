@@ -85,15 +85,6 @@ def images() -> DownloadableImageCollection:
             md5="dc9ad203263f34352e18bc29b03e1066",
             file="tuebingen_neckarfront__andreas_praefcke.jpg",
         ),
-        "che_high": DownloadableImage(
-            "https://upload.wikimedia.org/wikipedia/commons/5/58/CheHigh.jpg",
-            title="CheHigh",
-            author="Alberto Korda",
-            date="1960",
-            license=ExpiredCopyrightLicense(1960),
-            md5="62af957a89fdfcb9618570b6d836d054",
-            file="CheHigh.jpg",
-        ),
         "tower_of_babel": DownloadableImage(
             "https://upload.wikimedia.org/wikipedia/commons/f/fc/Pieter_Bruegel_the_Elder_-_The_Tower_of_Babel_%28Vienna%29_-_Google_Art_Project_-_edited.jpg",
             title="The Tower of Babel",

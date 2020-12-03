@@ -113,31 +113,6 @@ def images() -> DownloadableImageCollection:
         ),
     }
 
-    texture_base_ulyanov = urljoin(base_ulyanov, "textures/")
-    base_ulyanov_suppl_texture = "https://raw.githubusercontent.com/DmitryUlyanov/texture_nets/texture_nets_v1/supplementary//texture_models/"
-
-    texture_images = {
-        "cezanne": DownloadableImage(
-            urljoin(texture_base_ulyanov, "cezanne.jpg"),
-            md5="fab6d360c361c38c331b3ee5ef0078f5",
-        ),
-        "bricks": DownloadableImage(
-            urljoin(base_ulyanov_suppl_texture, "bricks.png"),
-            md5="1e13818e1fbefbd22f110a1c2f781d40",
-        ),
-        "pebble": DownloadableImage(
-            urljoin(base_ulyanov_suppl_texture, "pebble.png"),
-            md5="5b5e5aa6c579e42e268058a94d683a6c",
-        ),
-        "pixels": DownloadableImage(
-            urljoin(base_ulyanov_suppl_texture, "pixelcity_windows2.jpg"),
-            md5="53026a8411e7c26e959e36d3223f3b8f",
-        ),
-        "peppers": DownloadableImage(
-            urljoin(base_ulyanov_suppl_texture, "red-peppers256.o.jpg"),
-            md5="16371574a10e0d10b88b807204c4f546",
-        ),
-    }
     base_johnson = (
         "https://raw.githubusercontent.com/jcjohnson/fast-neural-style/master/images/"
     )
@@ -180,7 +155,7 @@ def images() -> DownloadableImageCollection:
         ),
     }
     return DownloadableImageCollection(
-        {**texture_images, **content_images, **style_images}
+        {**content_images, **style_images}
     )
 
 

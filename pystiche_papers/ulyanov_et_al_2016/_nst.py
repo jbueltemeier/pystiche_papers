@@ -171,9 +171,9 @@ def stylization(
         transformer = _transformer(
             style=style, impl_params=impl_params, instance_norm=instance_norm,
         )
-        if instance_norm or not impl_params:
-            # https://github.com/pmeier/texture_nets/blob/aad2cc6f8a998fedc77b64bdcfe1e2884aa0fb3e/test.lua#L32
-            transformer = transformer.eval()
+    if instance_norm or not impl_params:
+        # https://github.com/pmeier/texture_nets/blob/aad2cc6f8a998fedc77b64bdcfe1e2884aa0fb3e/test.lua#L32
+        transformer = transformer.eval()
     transformer = transformer.to(device)
 
     with torch.no_grad():
@@ -182,9 +182,11 @@ def stylization(
         )
         content_transform = content_transform.to(device)
         input_image = content_transform(input_image)
+        preprocessor = _preprocessor()
+        preprocessor = preprocessor.to(device)
         postprocessor = _postprocessor()
         postprocessor = postprocessor.to(device)
-        output_image = transformer(input_image)
+        output_image = transformer(preprocessor(input_image))
         output_image = postprocessor(output_image)
 
     return cast(torch.Tensor, output_image.detach())

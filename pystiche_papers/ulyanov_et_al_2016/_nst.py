@@ -100,9 +100,9 @@ def training(
     if lr_scheduler is None:
         if get_optimizer is None:
             get_optimizer = optimizer
-        optimizer_ = get_optimizer(transformer)
+        optimizer_ = get_optimizer(transformer, impl_params=impl_params, instance_norm=instance_norm)
 
-        lr_scheduler = _lr_scheduler(optimizer_, impl_params=impl_params,)
+        lr_scheduler = _lr_scheduler(optimizer_, impl_params=impl_params)
 
     if num_epochs is None:
         # The num_iterations are split up into multiple epochs with corresponding
@@ -147,7 +147,7 @@ def stylization(
     input_image: torch.Tensor,
     transformer: Union[nn.Module, str],
     impl_params: bool = True,
-    instance_norm: bool = False,
+    instance_norm: bool = True,
 ) -> torch.Tensor:
     r"""Transforms an input image into a stylised version using the transformer.
 
@@ -182,11 +182,9 @@ def stylization(
         )
         content_transform = content_transform.to(device)
         input_image = content_transform(input_image)
-        preprocessor = _preprocessor()
-        preprocessor = preprocessor.to(device)
         postprocessor = _postprocessor()
         postprocessor = postprocessor.to(device)
-        output_image = transformer(preprocessor(input_image))
+        output_image = transformer(input_image)
         output_image = postprocessor(output_image)
 
     return cast(torch.Tensor, output_image.detach())

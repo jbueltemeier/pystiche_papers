@@ -13,7 +13,6 @@ def training(args):
         "candy",
         "the_scream",
         "jean_metzinger",
-        "mosaic",
         "pleades",
         "starry",
         "turner",

@@ -16,7 +16,7 @@ from ._data import style_transform as _style_transform
 from ._loss import perceptual_loss
 from ._modules import transformer as _transformer
 from ._utils import lr_scheduler as _lr_scheduler
-from ._utils import optimizer
+from ._utils import optimizer as _optimizer
 from ._utils import postprocessor as _postprocessor
 from ._utils import preprocessor as _preprocessor
 
@@ -32,7 +32,7 @@ def training(
     criterion: Optional[loss.PerceptualLoss] = None,
     lr_scheduler: Optional[ExponentialLR] = None,
     num_epochs: Optional[int] = None,
-    get_optimizer: Optional[Callable[[nn.Module], Optimizer]] = None,
+    optimizer: Optional[Optimizer] = None,
     quiet: bool = False,
     logger: Optional[optim.OptimLogger] = None,
     log_fn: Optional[
@@ -63,7 +63,7 @@ def training(
         num_epochs: Optional number of epochs. If omitted, the num_epochs is determined
             with respect to ``instance_norm`` and ``impl_params``. For details see
             :ref:`here <table-hyperparameters-ulyanov_et_al_2016>`.
-        get_optimizer: Optional getter for the optimizer. If omitted, the default
+        optimizer: Optimizer for the transformer. If omitted, the default
             :func:`~pystiche_papers.ulyanov_et_al_2016.optimizer` is used.
         quiet: If ``True``, not information is logged during the optimization. Defaults
             to ``False``.
@@ -98,11 +98,11 @@ def training(
     criterion = criterion.to(device)
 
     if lr_scheduler is None:
-        if get_optimizer is None:
-            get_optimizer = optimizer
-        optimizer_ = get_optimizer(transformer, impl_params=impl_params, instance_norm=instance_norm)
-
-        lr_scheduler = _lr_scheduler(optimizer_, impl_params=impl_params)
+        if optimizer is None:
+            optimizer = _optimizer(
+                transformer, impl_params=impl_params, instance_norm=instance_norm
+            )
+        lr_scheduler = _lr_scheduler(optimizer, impl_params=impl_params)
 
     if num_epochs is None:
         # The num_iterations are split up into multiple epochs with corresponding

@@ -66,7 +66,7 @@ def training(args):
                 output_name += "__impl_params"
             if args.instance_norm:
                 output_name += "__instance_norm"
-            output_file = path.join(args.image_results_dir, f"{output_name}.jpg")
+            output_file = path.join(args.image_results_dir, f"{output_name}.png")
             image.write_image(output_image, output_file)
 
 

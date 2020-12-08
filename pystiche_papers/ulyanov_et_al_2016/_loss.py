@@ -89,10 +89,10 @@ def content_loss(
 
 # Scale gradients in the backward pass
 # https://github.com/jcjohnson/neural-style/issues/450
+# https://github.com/ProGamerGov/neural-style-pt/blob/cbcd023326a3487a2d75270ed1f3b3ddb4b72407/neural_style.py#L404
 class ScaleGradients(torch.autograd.Function):
     @staticmethod
     def forward(self: Any, input_tensor: torch.Tensor, strength: float) -> torch.Tensor:  # type: ignore[override]
-        self.strength = strength
         return input_tensor
 
     @staticmethod

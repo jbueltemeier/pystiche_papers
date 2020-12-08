@@ -88,6 +88,7 @@ def content_loss(
 
 
 # Scale gradients in the backward pass
+# https://github.com/jcjohnson/neural-style/issues/450
 class ScaleGradients(torch.autograd.Function):
     @staticmethod
     def forward(self: Any, input_tensor: torch.Tensor, strength: float) -> torch.Tensor:  # type: ignore[override]
@@ -98,7 +99,7 @@ class ScaleGradients(torch.autograd.Function):
     def backward(self: Any, grad_output: torch.Tensor) -> Tuple[torch.Tensor, Any]:  # type: ignore[override]
         grad_input = grad_output.clone()
         grad_input = grad_input / (torch.norm(grad_input, keepdim=True) + 1e-8)
-        return grad_input * self.strength * self.strength, None
+        return grad_input, None
 
 
 class GramOperator(ops.GramOperator):
@@ -108,9 +109,8 @@ class GramOperator(ops.GramOperator):
         # https://github.com/pmeier/texture_nets/blob/b2097eccaec699039038970b191780f97c238816/src/texture_loss.lua#L38
         # In the reference implementation the gram_matrix is only divided by the
         # batch_size.
-        normalize = not impl_params
         self.normalize_by_num_channels = impl_params
-        super().__init__(encoder, normalize=normalize, **gram_op_kwargs)
+        super().__init__(encoder, **gram_op_kwargs)
 
         # https://github.com/pmeier/texture_nets/blob/b2097eccaec699039038970b191780f97c238816/src/texture_loss.lua#L56-L57
         # In the reference implementation the gradients of the style_loss are

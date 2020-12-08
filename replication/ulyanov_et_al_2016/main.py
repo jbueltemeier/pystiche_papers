@@ -19,7 +19,7 @@ def training(args):
     )
 
     dataset = paper.dataset(
-        path.join(args.dataset_dir, "style"),
+        path.join(args.dataset_dir, "content"),
         impl_params=args.impl_params,
         instance_norm=args.instance_norm,
     )

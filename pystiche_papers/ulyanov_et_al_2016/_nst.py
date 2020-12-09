@@ -8,9 +8,9 @@ from torch.utils.data import DataLoader
 
 import pystiche
 from pystiche import loss, misc, optim
+from pystiche.image import transforms
 
 from ..utils import batch_up_image
-from ._data import content_transform as _content_transform
 from ._data import images as _images
 from ._data import style_transform as _style_transform
 from ._loss import perceptual_loss
@@ -148,6 +148,7 @@ def stylization(
     transformer: Union[nn.Module, str],
     impl_params: bool = True,
     instance_norm: bool = True,
+    edge_size: int = 256,
 ) -> torch.Tensor:
     r"""Transforms an input image into a stylised version using the transformer.
 
@@ -163,6 +164,8 @@ def stylization(
             :class:`~torch.nn.BatchNorm2d` as described in the paper. Additionally this
             flag is used for switching between two reference implementations For
             details see :ref:`here <table-branches-ulyanov_et_al_2016>`.
+        edge_size: Size of the image to which the image should be resized before
+            transformation.
 
     """
     device = input_image.device
@@ -177,11 +180,10 @@ def stylization(
     transformer = transformer.to(device)
 
     with torch.no_grad():
-        content_transform = _content_transform(
-            impl_params=impl_params, instance_norm=instance_norm
-        )
-        content_transform = content_transform.to(device)
-        input_image = content_transform(input_image)
+        # https://github.com/pmeier/texture_nets/blob/aad2cc6f8a998fedc77b64bdcfe1e2884aa0fb3e/test.lua#L37
+        # https://github.com/pmeier/texture_nets/blob/b2097eccaec699039038970b191780f97c238816/stylization_process.lua#L30
+        transform = transforms.Resize((edge_size, edge_size))
+        input_image = transform(input_image)
         postprocessor = _postprocessor()
         postprocessor = postprocessor.to(device)
         output_image = transformer(input_image)

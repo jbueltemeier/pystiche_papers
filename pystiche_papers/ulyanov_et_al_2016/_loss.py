@@ -92,14 +92,15 @@ def content_loss(
 # https://github.com/ProGamerGov/neural-style-pt/blob/cbcd023326a3487a2d75270ed1f3b3ddb4b72407/neural_style.py#L404
 class ScaleGradients(torch.autograd.Function):
     @staticmethod
-    def forward(self: Any, input_tensor: torch.Tensor, strength: float) -> torch.Tensor:  # type: ignore[override]
+    def forward(self: Any, input_tensor: torch.Tensor, weight: float) -> torch.Tensor:  # type: ignore[override]
+        self.weight = weight
         return input_tensor
 
     @staticmethod
     def backward(self: Any, grad_output: torch.Tensor) -> Tuple[torch.Tensor, Any]:  # type: ignore[override]
         grad_input = grad_output.clone()
         grad_input = grad_input / (torch.norm(grad_input, keepdim=True) + 1e-8)
-        return grad_input, None
+        return grad_input * self.weight, None
 
 
 class GramOperator(ops.GramOperator):

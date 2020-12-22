@@ -1,8 +1,8 @@
-from typing import Optional, cast
+from typing import cast
 
 import torch
 
-from ._modules import TransformAutoEncoderContainer, wct_transformer
+from ._modules import wct_transformer
 
 __all__ = [
     "stylization",
@@ -26,9 +26,10 @@ def stylization(
     """
     device = input_image.device
     transformer = wct_transformer(impl_params=impl_params)
+    transformer = transformer.to(device)
+    transformer.eval()
 
     transformer.set_target_image(style_image)
-    transformer = transformer.to(device)
 
     with torch.no_grad():
         output_image = transformer(input_image)

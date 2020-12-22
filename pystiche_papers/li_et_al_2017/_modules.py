@@ -1,10 +1,11 @@
 from abc import abstractmethod
-from typing import Callable, Sequence, Tuple, Union, cast
+from typing import Callable, Sequence, Dict, Union, cast
 
 import torch
 
 import pystiche
-import pystiche_papers.li_et_al_2017 as paper
+from pystiche_papers.li_et_al_2017._decoders import SequentialDecoder, vgg_decoders
+from pystiche_papers.li_et_al_2017._transform import wct
 from pystiche import enc
 
 __all__ = ["WCTAutoEncoder", "TransformAutoEncoderContainer"]
@@ -63,7 +64,7 @@ class WCTAutoEncoder(_TransformAutoEncoder):
     def __init__(
         self,
         encoder: enc.Encoder,
-        decoder: enc.Encoder,
+        decoder: SequentialDecoder,
         weight: float = 1.0,
         impl_params: bool = True,
     ) -> None:
@@ -72,7 +73,7 @@ class WCTAutoEncoder(_TransformAutoEncoder):
         super().__init__(encoder, decoder)
 
     def transform(self, enc: torch.Tensor, target_enc: torch.Tensor) -> torch.Tensor:
-        return paper.wct(
+        return wct(
             enc, target_enc, self.weight, reduce_channels=self.reduce_channels
         )
 
@@ -82,7 +83,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
         self,
         multi_layer_encoder: enc.MultiLayerEncoder,
         decoders: Sequence[
-            Tuple[str, enc.Encoder]
+            Dict[str, SequentialDecoder]
         ],  # TODO: Order is important. Add sort and parameter reverse order?
         get_autoencoder: Callable[
             [enc.Encoder, enc.Encoder, float], _TransformAutoEncoder
@@ -99,8 +100,8 @@ class TransformAutoEncoderContainer(pystiche.Module):
             return get_autoencoder(encoder, decoder, weight)
 
         named_autoencoder = [
-            (name, get_single_autoencoder(name, decoder, weight))
-            for (name, decoder), weight in zip(decoders, cast(Sequence, level_weights))
+            (decoder_data[0], get_single_autoencoder(decoder_data[0], decoder_data[1], weight))
+            for decoder_data, weight in zip(decoders.items(), cast(Sequence, level_weights))
         ]
         super().__init__()
         self.add_named_modules(named_autoencoder)
@@ -121,7 +122,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
 
 def wct_transformer(impl_params: bool = True) -> TransformAutoEncoderContainer:
     multi_layer_encoder = enc.vgg19_multi_layer_encoder()
-    decoders = paper.vgg_decoders()
+    decoders = vgg_decoders()
 
     level_weights = 0.6
     def get_autoencoder(

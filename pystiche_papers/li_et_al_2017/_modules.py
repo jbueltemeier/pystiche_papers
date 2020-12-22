@@ -121,13 +121,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
 
 def wct_transformer(impl_params: bool = True) -> TransformAutoEncoderContainer:
     multi_layer_encoder = enc.vgg19_multi_layer_encoder()
-    # TODO: set the right decoders
-    decoder1_1 = None
-    decoder2_1 = None
-    decoder3_1 = None
-    decoder4_1 = None
-    decoder5_1 = None
-    decoders = [("conv5_1", decoder5_1), ("conv4_1", decoder4_1), ("conv3_1", decoder3_1), ("conv2_1", decoder2_1), ("conv1_1", decoder1_1)]
+    decoders = paper.vgg_decoders()
 
     level_weights = 0.6
     def get_autoencoder(

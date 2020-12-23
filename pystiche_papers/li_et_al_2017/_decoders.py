@@ -17,31 +17,31 @@ DECODER_FILES = (
 
 VGG_DECODER_DATA = {
         1: {
-            "name": "conv1_1",
+            "name": "relu1_1",
             "first_conv": (64, 3),
             "channels": (),
             "filename": "feature_invertor_conv1_1.pth"
         },
         2: {
-            "name": "conv2_1",
+            "name": "relu2_1",
             "first_conv": (128, 64),
             "channels": (64, 64),
             "filename": "feature_invertor_conv2_1.pth"
         },
         3: {
-            "name": "conv3_1",
+            "name": "relu3_1",
             "first_conv": (256, 128),
             "channels": (128, 128),
             "filename": "feature_invertor_conv3_1.pth"
         },
         4: {
-            "name": "conv4_1",
+            "name": "relu4_1",
             "first_conv": (512, 256),
             "channels": (256, 256, 256, 256),
             "filename": "feature_invertor_conv4_1.pth"
         },
         5: {
-            "name": "conv5_1",
+            "name": "relu5_1",
             "first_conv": (512, 512),
             "channels": (512, 512, 512, 512),
             "filename": "feature_invertor_conv5_1.pth"
@@ -105,7 +105,7 @@ class VGGDecoderLoader(ModelLoader):
         modules.extend(self.output_conv())
         self.models[name] = SequentialDecoder(modules)
 
-    def load_models(self, layers: Optional[Sequence[int]], init_weights: bool = True) -> Dict[str, enc.Encoder]:
+    def load_models(self, layers: Optional[Sequence[int]] = None, init_weights: bool = True) -> Dict[str, enc.Encoder]:
         if layers is None:
             layers = VGG_DECODER_DATA.keys()
 

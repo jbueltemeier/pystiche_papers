@@ -44,12 +44,12 @@ class ModelLoader(object):
         pass
 
     @abstractmethod
-    def load_models(self, layers: Optional[Sequence[int]], init_weights: bool = True) -> Dict[str, enc.Encoder]:
+    def load_models(self, layers: Optional[Sequence[int]] = None, init_weights: bool = True) -> Dict[str, enc.Encoder]:
         pass
 
 
 class PretrainedVGGModels(object):
-    def __init__(self, root: str, layers: Sequence[int], loader: ModelLoader,  download: bool = False) -> None:
+    def __init__(self, root: str, loader: ModelLoader, layers: Sequence[int] = None, download: bool = False) -> None:
         self.root = os.path.abspath(os.path.expanduser(root))
         self.layers = layers
 

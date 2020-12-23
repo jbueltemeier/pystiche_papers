@@ -5,7 +5,7 @@ import torch
 
 import pystiche
 from pystiche_papers.li_et_al_2017._decoders import SequentialDecoder, vgg_decoders
-from pystiche_papers.li_et_al_2017._encoders import vgg_encoders
+from pystiche_papers.li_et_al_2017._encoders import vgg_multi_layer_encoder
 from pystiche_papers.li_et_al_2017._transform import wct
 from pystiche import enc
 
@@ -82,7 +82,7 @@ class WCTAutoEncoder(_TransformAutoEncoder):
 class TransformAutoEncoderContainer(pystiche.Module):
     def __init__(
         self,
-        multi_layer_encoder: Union[enc.MultiLayerEncoder, Dict[str, enc.SequentialEncoder]],
+        multi_layer_encoder: enc.MultiLayerEncoder,
         decoders: Sequence[
             Dict[str, SequentialDecoder]
         ],  # TODO: Order is important. Add sort and parameter reverse order?
@@ -97,10 +97,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
         def get_single_autoencoder(
             layer: str, decoder: enc.Encoder, weight: float
         ) -> _TransformAutoEncoder:
-            if isinstance(multi_layer_encoder, enc.MultiLayerEncoder):
-                encoder = multi_layer_encoder.extract_encoder(layer)
-            else:
-                encoder = multi_layer_encoder[layer]
+            encoder = multi_layer_encoder.extract_encoder(layer)
             return get_autoencoder(encoder, decoder, weight)
 
         named_autoencoder = [
@@ -127,7 +124,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
 def wct_transformer(impl_params: bool = True) -> TransformAutoEncoderContainer:
     # multi_layer_encoder = enc.vgg19_multi_layer_encoder(weights="caffe", internal_preprocessing=False, allow_inplace=True)
     decoders = vgg_decoders()
-    encoders = vgg_encoders()
+    multi_layer_encoder = vgg_multi_layer_encoder()
 
     level_weights = 0.5
     def get_autoencoder(
@@ -135,4 +132,4 @@ def wct_transformer(impl_params: bool = True) -> TransformAutoEncoderContainer:
     ) -> WCTAutoEncoder:
         return WCTAutoEncoder(encoder, decoder, weight=weight, impl_params=impl_params)
 
-    return TransformAutoEncoderContainer(encoders, decoders, get_autoencoder, level_weights=level_weights)
+    return TransformAutoEncoderContainer(multi_layer_encoder, decoders, get_autoencoder, level_weights=level_weights)

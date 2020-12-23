@@ -5,6 +5,7 @@ import torch
 
 import pystiche
 from pystiche_papers.li_et_al_2017._decoders import SequentialDecoder, vgg_decoders
+from pystiche_papers.li_et_al_2017._encoders import vgg_encoders
 from pystiche_papers.li_et_al_2017._transform import wct
 from pystiche import enc
 
@@ -12,7 +13,7 @@ __all__ = ["WCTAutoEncoder", "TransformAutoEncoderContainer"]
 
 
 class _AutoEncoder(pystiche.Module):
-    def __init__(self, encoder: enc.Encoder, decoder: enc.Encoder,) -> None:
+    def __init__(self, encoder: enc.Encoder, decoder: SequentialDecoder) -> None:
         super().__init__()
         self.encoder = encoder
         self.decoder = decoder
@@ -35,7 +36,7 @@ class _TransformAutoEncoder(_AutoEncoder):
     target_enc: torch.Tensor
 
     def __init__(
-        self, encoder: enc.Encoder, decoder: enc.Encoder
+        self, encoder: enc.Encoder, decoder: SequentialDecoder
     ) -> None:
         super().__init__(encoder, decoder)
 
@@ -81,7 +82,7 @@ class WCTAutoEncoder(_TransformAutoEncoder):
 class TransformAutoEncoderContainer(pystiche.Module):
     def __init__(
         self,
-        multi_layer_encoder: enc.MultiLayerEncoder,
+        multi_layer_encoder: Union[enc.MultiLayerEncoder, Dict[str, enc.SequentialEncoder]],
         decoders: Sequence[
             Dict[str, SequentialDecoder]
         ],  # TODO: Order is important. Add sort and parameter reverse order?
@@ -96,7 +97,10 @@ class TransformAutoEncoderContainer(pystiche.Module):
         def get_single_autoencoder(
             layer: str, decoder: enc.Encoder, weight: float
         ) -> _TransformAutoEncoder:
-            encoder = multi_layer_encoder.extract_encoder(layer)
+            if isinstance(multi_layer_encoder, enc.MultiLayerEncoder):
+                encoder = multi_layer_encoder.extract_encoder(layer)
+            else:
+                encoder = multi_layer_encoder[layer]
             return get_autoencoder(encoder, decoder, weight)
 
         named_autoencoder = [
@@ -109,7 +113,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
     def process_input_image(self, input_image: torch.Tensor) -> torch.Tensor:
         output_image = input_image
         for _, autoencoder in self.named_children():
-            autoencoder(output_image)
+            output_image = autoencoder(output_image)
         return output_image
 
     def set_target_image(self, image: torch.Tensor) -> None:
@@ -121,13 +125,14 @@ class TransformAutoEncoderContainer(pystiche.Module):
 
 
 def wct_transformer(impl_params: bool = True) -> TransformAutoEncoderContainer:
-    multi_layer_encoder = enc.vgg19_multi_layer_encoder()
+    # multi_layer_encoder = enc.vgg19_multi_layer_encoder(weights="caffe", internal_preprocessing=False, allow_inplace=True)
     decoders = vgg_decoders()
+    encoders = vgg_encoders()
 
-    level_weights = 0.6
+    level_weights = 0.5
     def get_autoencoder(
         encoder: enc.Encoder, decoder: enc.Encoder, weight: float
     ) -> WCTAutoEncoder:
         return WCTAutoEncoder(encoder, decoder, weight=weight, impl_params=impl_params)
 
-    return TransformAutoEncoderContainer(multi_layer_encoder, decoders, get_autoencoder, level_weights=level_weights)
+    return TransformAutoEncoderContainer(encoders, decoders, get_autoencoder, level_weights=level_weights)

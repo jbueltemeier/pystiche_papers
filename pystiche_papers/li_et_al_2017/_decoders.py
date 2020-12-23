@@ -1,17 +1,12 @@
 from pystiche import enc
 from torch import nn
-from abc import abstractmethod
-import os
-import torch
-from typing import Sequence, Callable, List, TypeVar, Tuple, Optional, Dict
+from typing import Sequence,  Tuple, Optional, Dict
 from os import path
-from torch.hub import load_state_dict_from_url
-from urllib.parse import urljoin
-import more_itertools
 
-__all__ = ["SequentialDecoder", "DecoderLoader", "VGGDecoderLoader", "VGGDecoders", "vgg_decoders"]
+from ._utils import ModelLoader, channel_progression, PretrainedVGGModels
 
-BASE_URL = "https://github.com/pietrocarbo/deep-transfer/raw/master/models/autoencoder_vgg19/"
+__all__ = ["SequentialDecoder", "VGGDecoderLoader", "vgg_decoders"]
+
 
 VGG_DECODER_DATA = {
         1: {
@@ -46,17 +41,6 @@ VGG_DECODER_DATA = {
         },
     }
 
-T = TypeVar("T")
-
-
-def channel_progression(
-    module_fn: Callable[[int, int], T], channels: Sequence[int]
-) -> List[T]:
-    return [
-        module_fn(*channels_pair) for channels_pair in more_itertools.pairwise(channels)
-    ]
-
-
 
 class SequentialDecoder(enc.SequentialEncoder):
     r"""Decoder that operates in sequential manner.
@@ -70,34 +54,10 @@ class SequentialDecoder(enc.SequentialEncoder):
         super().__init__(modules=modules)
 
 
-class DecoderLoader(object):
-    def __init__(self, root: str) -> None:
-        self.root = root
-        self.decoders = {}
 
-    @property
-    def get_decoders(self) -> Dict[str, SequentialDecoder]:
-        return self.decoders
-
-    @abstractmethod
-    def init_decoder(self, depth: int) -> None:
-        pass
-
-    @abstractmethod
-    def build_decoder(self, depth: int) -> None:
-        pass
-
-    @abstractmethod
-    def load_decoders(self, depth: int) -> None:
-        pass
-
-
-class VGGDecoderLoader(DecoderLoader):
+class VGGDecoderLoader(ModelLoader):
     def __init__(self, root: str) -> None:
         super().__init__(root=root)
-
-    def model_file_path(self, filename: str) -> str:
-        return os.path.join(self.root, filename)
 
     def conv_block(self, channels: Tuple[int]):
         modules = []
@@ -126,7 +86,7 @@ class VGGDecoderLoader(DecoderLoader):
         modules.extend(self.conv_block(channels))
         return modules
 
-    def build_decoder(self, name: str, layer: int) -> None:
+    def build_model(self, name: str, layer: int) -> None:
         modules = []
 
         if layer > 1:
@@ -136,69 +96,26 @@ class VGGDecoderLoader(DecoderLoader):
                 modules.extend(self.depth_level(depth_data["channels"]))
 
         modules.extend(self.output_conv())
-        self.decoders[name] = SequentialDecoder(modules)
+        self.models[name] = SequentialDecoder(modules)
 
-    def init_decoder(self, depth: int) -> None:
-        depth_data = VGG_DECODER_DATA[depth]
-        self.decoders[depth_data["name"]].load_state_dict(torch.load(self.model_file_path(depth_data["filename"])))
-        self.decoders[depth_data["name"]].eval()
-
-    def load_decoders(self, layers: Optional[Sequence[int]], init_weights: bool = True) -> None:
+    def load_models(self, layers: Optional[Sequence[int]], init_weights: bool = True) -> Dict[str, enc.Encoder]:
         if layers is None:
             layers = VGG_DECODER_DATA.keys()
 
         for layer in layers:
-            self.build_decoder(VGG_DECODER_DATA[layer]["name"], layer)
+            vgg_data = VGG_DECODER_DATA[layer]
+            self.build_model(vgg_data["name"], layer)
             if init_weights:
-                self.init_decoder(layer)
-
-
-
-class VGGDecoders(object):
-    def __init__(self, root: str, layers: Sequence[int], download: bool = False) -> None:
-        self.root = os.path.abspath(os.path.expanduser(root))
-        self.layers = layers
-
-        if download:
-            self.download_models()
-
-        self.load_models()
-        super().__init__()
-
-
-    def url(self, id: int, filename: str) -> str:
-        path = f"vgg19_{id:01d}//{filename}"
-        return urljoin(BASE_URL, path)
-
-    def download(self, id: int, filename: str) -> None:
-        root_url = self.url(id, filename)
-        if path.exists(root_url):
-            msg = (
-                f"The model directory {root_url} already exists. If you want to "
-                "re-download the model, delete the file."
-            )
-            raise RuntimeError(msg)
-
-        load_state_dict_from_url(root_url, model_dir=self.root)
-
-    def download_models(self):
-        # TODO: rework this wrong items and test this
-        for id, data in enumerate(self.decoder_files.items(), 1):
-            filename = data[1]
-            self.download(id, filename)
-
-
-    def load_models(self) -> Dict[str, SequentialDecoder]:
-        decoder_loader = VGGDecoderLoader(self.root)
-        decoder_loader.load_decoders(layers=self.layers)
-        return decoder_loader.decoders
+                self.init_model(vgg_data["filename"], vgg_data["name"])
+        return self.models
 
 
 def vgg_decoders() -> Dict[str, SequentialDecoder]:
     here = path.dirname(__file__)
 
     model_dir = path.join(here, "models")
-    vgg_decoder = VGGDecoders(model_dir, layers=[1, 2, 3, 4, 5])
+    loader = VGGDecoderLoader(model_dir)
+    vgg_decoder = PretrainedVGGModels(model_dir, layers=[5, 4, 3, 2, 1], loader=loader)
     return vgg_decoder.load_models()
 
 

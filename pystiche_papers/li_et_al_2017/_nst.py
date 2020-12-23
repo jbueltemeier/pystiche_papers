@@ -3,8 +3,6 @@ from typing import cast
 import torch
 
 from ._modules import wct_transformer
-from ._utils import postprocessor as _postprocessor
-from ._utils import preprocessor as _preprocessor
 
 __all__ = [
     "stylization",
@@ -28,18 +26,11 @@ def stylization(
     """
     device = input_image.device
 
-    preprocessor = _preprocessor()
-    preprocessor = preprocessor.to(device)
-    postprocessor = _postprocessor()
-    postprocessor = postprocessor.to(device)
-
     transformer = wct_transformer(impl_params=impl_params)
     transformer = transformer.to(device)
-    transformer.eval()
-
-    transformer.set_target_image(preprocessor(style_image))
 
     with torch.no_grad():
-        output_image = transformer(preprocessor(input_image))
+        transformer.set_target_image(style_image)
+        output_image = transformer(input_image)
 
-    return cast(torch.Tensor, postprocessor(output_image.detach()))
+    return cast(torch.Tensor, output_image)

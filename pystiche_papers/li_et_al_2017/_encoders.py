@@ -9,6 +9,13 @@ __all__ = ["VGGEncoderLoader", "vgg_encoders"]
 
 BASE_URL = "https://github.com/pietrocarbo/deep-transfer/raw/master/models/autoencoder_vgg19/"
 
+ENCODER_FILES = (
+    "vgg_normalised_conv1_1.pth",
+    "vgg_normalised_conv2_1.pth",
+    "vgg_normalised_conv3_1.pth",
+    "vgg_normalised_conv4_1.pth",
+    "vgg_normalised_conv5_1.pth"
+)
 VGG_ENCODER_DATA = {
         0: {
             "name": "input_norm",
@@ -110,11 +117,15 @@ class VGGEncoderLoader(ModelLoader):
                 self.init_model(vgg_data["filename"], vgg_data["name"])
         return self.models
 
+class EncoderVGGModels(PretrainedVGGModels):
+    def download_models(self):
+        for id, filename in enumerate(ENCODER_FILES, 1):
+            self.download(id, filename)
+
 def vgg_encoders() -> Dict[str, enc.SequentialEncoder]:
     here = path.dirname(__file__)
-
     model_dir = path.join(here, "models")
     loader = VGGEncoderLoader(model_dir)
-    vgg_decoder = PretrainedVGGModels(model_dir, layers=[5, 4, 3, 2, 1], loader=loader)
+    vgg_decoder = EncoderVGGModels(model_dir, layers=[5, 4, 3, 2, 1], loader=loader)
     return vgg_decoder.load_models()
 

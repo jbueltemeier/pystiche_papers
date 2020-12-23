@@ -7,6 +7,13 @@ from ._utils import ModelLoader, channel_progression, PretrainedVGGModels
 
 __all__ = ["SequentialDecoder", "VGGDecoderLoader", "vgg_decoders"]
 
+DECODER_FILES = (
+    "feature_invertor_conv1_1.pth",
+    "feature_invertor_conv2_1.pth",
+    "feature_invertor_conv3_1.pth",
+    "feature_invertor_conv4_1.pth",
+    "feature_invertor_conv5_1.pth",
+)
 
 VGG_DECODER_DATA = {
         1: {
@@ -110,12 +117,17 @@ class VGGDecoderLoader(ModelLoader):
         return self.models
 
 
+class DecoderVGGModels(PretrainedVGGModels):
+    def download_models(self):
+        for id, filename in enumerate(DECODER_FILES, 1):
+            self.download(id, filename)
+
 def vgg_decoders() -> Dict[str, SequentialDecoder]:
     here = path.dirname(__file__)
 
     model_dir = path.join(here, "models")
     loader = VGGDecoderLoader(model_dir)
-    vgg_decoder = PretrainedVGGModels(model_dir, layers=[5, 4, 3, 2, 1], loader=loader)
+    vgg_decoder = DecoderVGGModels(model_dir, layers=[5, 4, 3, 2, 1], loader=loader)
     return vgg_decoder.load_models()
 
 

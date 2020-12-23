@@ -76,9 +76,9 @@ class PretrainedVGGModels(object):
 
         load_state_dict_from_url(root_url, model_dir=self.root)
 
-    def download_models(self, files):
-        for id, filename in enumerate(files, 1):
-            self.download(id, filename)
+    @abstractmethod
+    def download_models(self):
+        pass
 
     def load_models(self) -> Dict[str, enc.Encoder]:
         return self.loader.load_models(self.layers)

@@ -5,7 +5,7 @@ from os import path
 
 from ._utils import ModelLoader, channel_progression, PretrainedVGGModels
 
-__all__ = ["VGGEncoderLoader", "vgg_encoders"]
+__all__ = ["VGGEncoderLoader", "vgg_multi_layer_encoder"]
 
 BASE_URL = "https://github.com/pietrocarbo/deep-transfer/raw/master/models/autoencoder_vgg19/"
 
@@ -16,6 +16,7 @@ ENCODER_FILES = (
     "vgg_normalised_conv4_1.pth",
     "vgg_normalised_conv5_1.pth"
 )
+
 VGG_ENCODER_DATA = {
         0: {
             "name": "input_norm",
@@ -127,8 +128,6 @@ class VGGEncoderLoader(ModelLoader):
                 name = f"conv{block}_{depth}"
                 if depth == 0:
                     depth += 1
-            elif isinstance(module, nn.BatchNorm2d):
-                name = f"bn{block}_{depth}"
             elif isinstance(module, nn.ReflectionPad2d):
                 name = f"pad{block}_{depth}"
             elif isinstance(module, nn.ReLU):
@@ -146,15 +145,17 @@ class VGGEncoderLoader(ModelLoader):
 
         return enc.MultiLayerEncoder(modules)
 
-class EncoderVGGModels(PretrainedVGGModels):
+
+class EncoderVGGModel(PretrainedVGGModels):
     def download_models(self):
         for id, filename in enumerate(ENCODER_FILES, 1):
             self.download(id, filename)
+
 
 def vgg_multi_layer_encoder() -> enc.MultiLayerEncoder:
     here = path.dirname(__file__)
     model_dir = path.join(here, "models")
     loader = VGGEncoderLoader(model_dir)
-    vgg_decoder = EncoderVGGModels(model_dir, loader=loader)
-    return vgg_decoder.load_models()
+    vgg_encoder = EncoderVGGModel(model_dir, loader=loader)
+    return vgg_encoder.load_models()
 

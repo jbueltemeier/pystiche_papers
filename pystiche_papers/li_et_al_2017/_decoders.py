@@ -3,7 +3,9 @@ from torch import nn
 from typing import Sequence,  Tuple, Optional, Dict
 from os import path
 
+from pystiche_papers.utils import HyperParameters
 from ._utils import ModelLoader, channel_progression, PretrainedVGGModels
+from ._utils import hyper_parameters as _hyper_parameters
 
 __all__ = ["SequentialDecoder", "VGGDecoderLoader", "vgg_decoders"]
 
@@ -54,12 +56,10 @@ class SequentialDecoder(enc.SequentialEncoder):
 
     Args:
         modules: Sequential modules.
-        layer: Name of the layer of the pre-trained network whose encodings can be decoded.
     """
 
     def __init__(self, modules: Sequence[nn.Module]) -> None:
         super().__init__(modules=modules)
-
 
 
 class VGGDecoderLoader(ModelLoader):
@@ -122,12 +122,16 @@ class DecoderVGGModels(PretrainedVGGModels):
         for id, filename in enumerate(DECODER_FILES, 1):
             self.download(id, filename)
 
-def vgg_decoders() -> Dict[str, SequentialDecoder]:
+
+def vgg_decoders(hyper_parameters: Optional[HyperParameters] = None) -> Dict[str, SequentialDecoder]:
+    if hyper_parameters is None:
+        hyper_parameters = _hyper_parameters()
+
     here = path.dirname(__file__)
 
     model_dir = path.join(here, "models")
     loader = VGGDecoderLoader(model_dir)
-    vgg_decoder = DecoderVGGModels(model_dir, layers=[5, 4, 3, 2, 1], loader=loader)
+    vgg_decoder = DecoderVGGModels(model_dir, layers=hyper_parameters.decoder.layers, loader=loader)
     return vgg_decoder.load_models()
 
 

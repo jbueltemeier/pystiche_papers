@@ -7,6 +7,8 @@ from os import path
 from pystiche import enc
 from torch.hub import load_state_dict_from_url
 from urllib.parse import urljoin
+from pystiche_papers.utils import HyperParameters
+
 
 __all__ = [
     "channel_progression",
@@ -82,3 +84,15 @@ class PretrainedVGGModels(object):
 
     def load_models(self) -> Dict[str, enc.Encoder]:
         return self.loader.load_models(self.layers)
+
+
+def hyper_parameters() -> HyperParameters:
+    r"""Hyper parameters from :cite:`Li2017`."""
+    return HyperParameters(
+        transform=HyperParameters(
+            weight=0.6,
+        ),
+        decoder=HyperParameters(
+            layers=[5, 4, 3, 2, 1],
+        ),
+    )

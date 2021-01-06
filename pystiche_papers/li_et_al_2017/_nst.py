@@ -1,8 +1,9 @@
-from typing import cast, Optional
+from typing import Optional, cast
 
 import torch
 
 from pystiche_papers.utils import HyperParameters
+
 from ._modules import wct_transformer
 from ._utils import hyper_parameters as _hyper_parameters
 
@@ -34,7 +35,9 @@ def stylization(
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters(impl_params=impl_params)
 
-    transformer = wct_transformer(impl_params=impl_params, hyper_parameters=hyper_parameters)
+    transformer = wct_transformer(
+        impl_params=impl_params, hyper_parameters=hyper_parameters
+    )
     transformer = transformer.to(device)
 
     with torch.no_grad():

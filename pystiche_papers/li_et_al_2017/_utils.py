@@ -1,21 +1,25 @@
-from typing import Sequence, Callable, List, TypeVar, Dict, Optional
-import more_itertools
-from abc import abstractmethod
-import torch
 import os
+from abc import abstractmethod
 from os import path
-from pystiche import enc
-from torch.hub import load_state_dict_from_url
+from typing import Callable, Dict, List, Optional, Sequence, TypeVar
 from urllib.parse import urljoin
-from pystiche_papers.utils import HyperParameters
 
+import more_itertools
+
+import torch
+from torch.hub import load_state_dict_from_url
+
+from pystiche import enc
+from pystiche_papers.utils import HyperParameters
 
 __all__ = [
     "channel_progression",
     "ModelLoader",
 ]
 
-BASE_URL = "https://github.com/pietrocarbo/deep-transfer/raw/master/models/autoencoder_vgg19/"
+BASE_URL = (
+    "https://github.com/pietrocarbo/deep-transfer/raw/master/models/autoencoder_vgg19/"
+)
 
 T = TypeVar("T")
 
@@ -37,8 +41,7 @@ class ModelLoader(object):
         return os.path.join(self.root, filename)
 
     def init_model(self, filename: str, name: str) -> None:
-        self.models[name].load_state_dict(
-            torch.load(self.model_file_path(filename)))
+        self.models[name].load_state_dict(torch.load(self.model_file_path(filename)))
         self.models[name].eval()
 
     @abstractmethod
@@ -46,12 +49,20 @@ class ModelLoader(object):
         pass
 
     @abstractmethod
-    def load_models(self, layers: Optional[Sequence[int]] = None, init_weights: bool = True) -> Dict[str, enc.Encoder]:
+    def load_models(
+        self, layers: Optional[Sequence[int]] = None, init_weights: bool = True
+    ) -> Dict[str, enc.Encoder]:
         pass
 
 
 class PretrainedVGGModels(object):
-    def __init__(self, root: str, loader: ModelLoader, layers: Sequence[int] = None, download: bool = False) -> None:
+    def __init__(
+        self,
+        root: str,
+        loader: ModelLoader,
+        layers: Sequence[int] = None,
+        download: bool = False,
+    ) -> None:
         self.root = os.path.abspath(os.path.expanduser(root))
         self.layers = layers
 
@@ -89,10 +100,6 @@ class PretrainedVGGModels(object):
 def hyper_parameters(impl_params: bool = True) -> HyperParameters:
     r"""Hyper parameters from :cite:`Li2017`."""
     return HyperParameters(
-        transform=HyperParameters(
-            weight=0.6 if impl_params else 1.0,
-        ),
-        decoder=HyperParameters(
-            layers=[5, 4, 3, 2, 1],
-        ),
+        transform=HyperParameters(weight=0.6 if impl_params else 1.0,),
+        decoder=HyperParameters(layers=[5, 4, 3, 2, 1],),
     )

@@ -1,15 +1,16 @@
 from abc import abstractmethod
-from typing import Callable, Sequence, Dict, Union, cast, Optional
+from typing import Callable, Dict, Optional, Sequence, Union, cast
 
 import torch
 
 import pystiche
+from pystiche import enc
+from pystiche_papers.utils import HyperParameters
+
 from ._decoders import SequentialDecoder, vgg_decoders
 from ._encoders import vgg_multi_layer_encoder
 from ._transform import wct
 from ._utils import hyper_parameters as _hyper_parameters
-from pystiche import enc
-from pystiche_papers.utils import HyperParameters
 
 __all__ = ["WCTAutoEncoder", "TransformAutoEncoderContainer"]
 
@@ -21,6 +22,7 @@ class _AutoEncoder(pystiche.Module):
             encoder: Encoder that is used to encode the target and input images.
             decoder: Decoder that is used to decode the encodings to an output image.
         """
+
     def __init__(self, encoder: enc.Encoder, decoder: SequentialDecoder) -> None:
         super().__init__()
         self.encoder = encoder
@@ -44,9 +46,7 @@ class _TransformAutoEncoder(_AutoEncoder):
     r"""Abstract base class for all Autoencoders transforming in an encoded space."""
     target_enc: torch.Tensor
 
-    def __init__(
-        self, encoder: enc.Encoder, decoder: SequentialDecoder
-    ) -> None:
+    def __init__(self, encoder: enc.Encoder, decoder: SequentialDecoder) -> None:
         super().__init__(encoder, decoder)
 
     def process_input_image(self, image: torch.Tensor) -> torch.Tensor:
@@ -81,6 +81,7 @@ class WCTAutoEncoder(_TransformAutoEncoder):
             implementation of the original authors and what is described in the paper.
             For details see :ref:`here <li_et_al_2017-impl_params>`.
     """
+
     def __init__(
         self,
         encoder: enc.Encoder,
@@ -93,9 +94,7 @@ class WCTAutoEncoder(_TransformAutoEncoder):
         super().__init__(encoder, decoder)
 
     def transform(self, enc: torch.Tensor, target_enc: torch.Tensor) -> torch.Tensor:
-        return wct(
-            enc, target_enc, self.weight, reduce_channels=self.reduce_channels
-        )
+        return wct(enc, target_enc, self.weight, reduce_channels=self.reduce_channels)
 
 
 class TransformAutoEncoderContainer(pystiche.Module):
@@ -116,6 +115,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
             sequence of ``float``s its length has to match ``layers``. Defaults to
             ``1.0`.
     """
+
     def __init__(
         self,
         multi_layer_encoder: enc.MultiLayerEncoder,
@@ -137,8 +137,13 @@ class TransformAutoEncoderContainer(pystiche.Module):
             return get_autoencoder(encoder, decoder, weight)
 
         named_autoencoder = [
-            (decoder_data[0], get_single_autoencoder(decoder_data[0], decoder_data[1], weight))
-            for decoder_data, weight in zip(decoders.items(), cast(Sequence, level_weights))
+            (
+                decoder_data[0],
+                get_single_autoencoder(decoder_data[0], decoder_data[1], weight),
+            )
+            for decoder_data, weight in zip(
+                decoders.items(), cast(Sequence, level_weights)
+            )
         ]
         super().__init__()
         self.add_named_modules(named_autoencoder)
@@ -157,7 +162,9 @@ class TransformAutoEncoderContainer(pystiche.Module):
         return self.process_input_image(input_image)
 
 
-def wct_transformer(impl_params: bool = True, hyper_parameters: Optional[HyperParameters] = None) -> TransformAutoEncoderContainer:
+def wct_transformer(
+    impl_params: bool = True, hyper_parameters: Optional[HyperParameters] = None
+) -> TransformAutoEncoderContainer:
     r"""Multi Layer whitening and coloring transformer from :cite:`Li2017`.
 
     Args:
@@ -176,9 +183,12 @@ def wct_transformer(impl_params: bool = True, hyper_parameters: Optional[HyperPa
     multi_layer_encoder = vgg_multi_layer_encoder()
 
     level_weights = hyper_parameters.transform.weight
+
     def get_autoencoder(
         encoder: enc.Encoder, decoder: enc.Encoder, weight: float
     ) -> WCTAutoEncoder:
         return WCTAutoEncoder(encoder, decoder, weight=weight, impl_params=impl_params)
 
-    return TransformAutoEncoderContainer(multi_layer_encoder, decoders, get_autoencoder, level_weights=level_weights)
+    return TransformAutoEncoderContainer(
+        multi_layer_encoder, decoders, get_autoencoder, level_weights=level_weights
+    )

@@ -7,15 +7,7 @@ from pystiche import image, misc, optim
 
 
 def training(args):
-    contents = (
-        "women1",
-        "flower",
-        "vincent",
-        "women2",
-        "women3",
-        "bridge",
-        "tubingen"
-    )
+    contents = ("women1", "flower", "vincent", "women2", "women3", "bridge", "tubingen")
     styles = (
         "abstract",
         "water",
@@ -27,7 +19,7 @@ def training(args):
         "brick1",
         "seated_nude",
         "women_hat",
-        "women_dress"
+        "women_dress",
     )
 
     image_size = 512
@@ -36,14 +28,16 @@ def training(args):
     images.download(args.image_source_dir)
 
     for style in styles:
-        style_image = images[style].read(device=args.device, size=(image_size,image_size))
+        style_image = images[style].read(
+            device=args.device, size=(image_size, image_size)
+        )
 
         for content in contents:
-            content_image = images[content].read(device=args.device, size=(image_size,image_size))
+            content_image = images[content].read(
+                device=args.device, size=(image_size, image_size)
+            )
             output_image = paper.stylization(
-                content_image,
-                style_image,
-                impl_params=args.impl_params,
+                content_image, style_image, impl_params=args.impl_params,
             )
 
             output_name = f"{style}_{content}"
@@ -53,9 +47,6 @@ def training(args):
             output_name += str(image_size)
             output_file = path.join(args.image_results_dir, f"{output_name}.png")
             image.write_image(output_image, output_file)
-
-
-
 
 
 def parse_input():

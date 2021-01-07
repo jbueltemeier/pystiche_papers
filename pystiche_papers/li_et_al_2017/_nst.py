@@ -30,10 +30,10 @@ def stylization(
             :func:`~pystiche_papers.li_et_al_2017.hyper_parameters` is used.
 
     """
-    device = input_image.device
-
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters(impl_params=impl_params)
+
+    device = input_image.device
 
     transformer = wct_transformer(
         impl_params=impl_params, hyper_parameters=hyper_parameters

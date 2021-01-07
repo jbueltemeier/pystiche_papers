@@ -1,5 +1,5 @@
 from os import path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import List, Optional, Sequence, Tuple, cast
 
 from torch import nn
 
@@ -60,8 +60,8 @@ class VGGEncoderLoader(ModelLoader):
     def __init__(self, root: str) -> None:
         super().__init__(root=root)
 
-    def conv_block(self, channels: Tuple[int]):
-        modules = []
+    def conv_block(self, channels: Tuple[int]) -> Sequence[nn.Module]:
+        modules: List[nn.Module] = []
         channel_progression(
             lambda in_channels, out_channels: modules.extend(
                 [
@@ -74,54 +74,57 @@ class VGGEncoderLoader(ModelLoader):
         )
         return modules
 
-    def input_conv(self):
-        modules = []
+    def input_conv(self) -> Sequence[nn.Module]:
+        modules: List[nn.Module] = []
         depth_data = VGG_ENCODER_DATA[0]
         modules.append(
             nn.Conv2d(
-                depth_data["first_conv"][0], depth_data["first_conv"][1], kernel_size=1
+                cast(Tuple, depth_data["first_conv"])[0],
+                cast(Tuple, depth_data["first_conv"])[1],
+                kernel_size=1,
             )
         )
         return modules
 
-    def output_conv(self, depth):
-        modules = []
+    def output_conv(self, depth: int) -> Sequence[nn.Module]:
+        modules: List[nn.Module] = []
         depth_data = VGG_ENCODER_DATA[depth]
-        modules.extend(self.conv_block(depth_data["first_conv"]))
+        modules.extend(self.conv_block(cast(Tuple[int], depth_data["first_conv"])))
         return modules
 
-    def depth_level(self, channels: Sequence[int]):
-        modules = []
+    def depth_level(self, channels: Tuple[int]) -> Sequence[nn.Module]:
+        modules: List[nn.Module] = []
         modules.extend(self.conv_block(channels))
         modules.append(nn.MaxPool2d((2, 2), (2, 2), (0, 0), ceil_mode=True))
         return modules
 
-    def build_model(self, name: str, layer: int) -> None:
-        modules = []
+    def build_model(self, name: str, layer: int) -> None:  # type: ignore[override]
+        modules: List[nn.Module] = []
         modules.extend(self.input_conv())
 
         for depth in range(1, layer):
             depth_data = VGG_ENCODER_DATA[depth]
-            modules.extend(self.conv_block(depth_data["first_conv"]))
-            modules.extend(self.depth_level(depth_data["channels"]))
+            modules.extend(self.conv_block(cast(Tuple[int], depth_data["first_conv"])))
+            modules.extend(self.depth_level(cast(Tuple[int], depth_data["channels"])))
 
         modules.extend(self.output_conv(layer))
 
         self.models[name] = enc.SequentialEncoder(modules)
 
     def load_models(
-        self, layers: Optional[Sequence[int]] = None, init_weights: bool = True
+        self, init_weights: bool = True, layer: Optional[int] = None,
     ) -> enc.MultiLayerEncoder:
-        if layers is None:
-            layers = [len(VGG_ENCODER_DATA.keys()) - 1]
+        if layer is None:
+            layer = len(VGG_ENCODER_DATA.keys()) - 1
 
-        for layer in layers:
-            vgg_data = VGG_ENCODER_DATA[layer]
-            self.build_model(vgg_data["name"], layer)
-            if init_weights:
-                self.init_model(vgg_data["filename"], vgg_data["name"])
+        vgg_data = VGG_ENCODER_DATA[layer]
+        self.build_model(cast(str, vgg_data["name"]), layer)
+        if init_weights:
+            self.init_model(
+                cast(str, vgg_data["filename"]), cast(str, vgg_data["name"])
+            )
 
-            return self._multi_layer_encoder(self.models[vgg_data["name"]])
+        return self._multi_layer_encoder(self.models[cast(str, vgg_data["name"])])
 
     def _multi_layer_encoder(
         self, encoder: enc.SequentialEncoder
@@ -153,9 +156,12 @@ class VGGEncoderLoader(ModelLoader):
 
 
 class EncoderVGGModel(PretrainedVGGModels):
-    def download_models(self):
+    def download_models(self) -> None:
         for id, filename in enumerate(ENCODER_FILES, 1):
             self.download(id, filename)
+
+    def load_models(self) -> enc.MultiLayerEncoder:
+        return cast(VGGEncoderLoader, self.loader).load_models()
 
 
 def vgg_multi_layer_encoder() -> enc.MultiLayerEncoder:

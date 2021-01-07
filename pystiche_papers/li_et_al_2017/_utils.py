@@ -1,7 +1,7 @@
 import os
 from abc import abstractmethod
 from os import path
-from typing import Callable, Dict, List, Optional, Sequence, TypeVar
+from typing import Callable, Dict, List, Optional, Sequence, TypeVar, Union
 from urllib.parse import urljoin
 
 import more_itertools
@@ -35,7 +35,7 @@ def channel_progression(
 class ModelLoader(object):
     def __init__(self, root: str) -> None:
         self.root = root
-        self.models = {}
+        self.models: Dict[str, enc.SequentialEncoder] = {}
 
     def model_file_path(self, filename: str) -> str:
         return os.path.join(self.root, filename)
@@ -50,8 +50,8 @@ class ModelLoader(object):
 
     @abstractmethod
     def load_models(
-        self, layers: Optional[Sequence[int]] = None, init_weights: bool = True
-    ) -> Dict[str, enc.Encoder]:
+        self, init_weights: bool = True
+    ) -> Union[Dict[str, enc.SequentialEncoder], enc.MultiLayerEncoder]:
         pass
 
 
@@ -60,7 +60,7 @@ class PretrainedVGGModels(object):
         self,
         root: str,
         loader: ModelLoader,
-        layers: Sequence[int] = None,
+        layers: Optional[Sequence[int]] = None,
         download: bool = False,
     ) -> None:
         self.root = os.path.abspath(os.path.expanduser(root))
@@ -90,11 +90,14 @@ class PretrainedVGGModels(object):
         load_state_dict_from_url(root_url, model_dir=self.root)
 
     @abstractmethod
-    def download_models(self):
+    def download_models(self) -> None:
         pass
 
-    def load_models(self) -> Dict[str, enc.Encoder]:
-        return self.loader.load_models(self.layers)
+    @abstractmethod
+    def load_models(
+        self,
+    ) -> Union[Dict[str, enc.SequentialEncoder], enc.MultiLayerEncoder]:
+        pass
 
 
 def hyper_parameters(impl_params: bool = True) -> HyperParameters:

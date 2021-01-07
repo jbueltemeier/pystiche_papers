@@ -1,5 +1,5 @@
 from os import path
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple, cast
 
 from torch import nn
 
@@ -68,8 +68,8 @@ class VGGDecoderLoader(ModelLoader):
     def __init__(self, root: str) -> None:
         super().__init__(root=root)
 
-    def conv_block(self, channels: Tuple[int]):
-        modules = []
+    def conv_block(self, channels: Tuple[int]) -> Sequence[nn.Module]:
+        modules: List[nn.Module] = []
         channel_progression(
             lambda in_channels, out_channels: modules.extend(
                 [
@@ -82,52 +82,63 @@ class VGGDecoderLoader(ModelLoader):
         )
         return modules
 
-    def output_conv(self):
-        modules = []
+    def output_conv(self) -> Sequence[nn.Module]:
+        modules: List[nn.Module] = []
         depth_data = VGG_DECODER_DATA[1]
         modules.append(nn.ReflectionPad2d((1, 1, 1, 1)))
         modules.append(
             nn.Conv2d(
-                depth_data["first_conv"][0], depth_data["first_conv"][1], kernel_size=3
+                cast(Tuple, depth_data["first_conv"])[0],
+                cast(Tuple, depth_data["first_conv"])[1],
+                kernel_size=3,
             )
         )
         return modules
 
-    def depth_level(self, channels: Sequence[int]):
-        modules = [nn.UpsamplingNearest2d(scale_factor=2)]
+    def depth_level(self, channels: Tuple[int]) -> Sequence[nn.Module]:
+        modules: List[nn.Module] = [nn.UpsamplingNearest2d(scale_factor=2)]
         modules.extend(self.conv_block(channels))
         return modules
 
-    def build_model(self, name: str, layer: int) -> None:
-        modules = []
+    def build_model(self, name: str, layer: int) -> None:  # type: ignore[override]
+        modules: List[nn.Module] = []
 
         if layer > 1:
             for depth in range(layer, 1, -1):
                 depth_data = VGG_DECODER_DATA[depth]
-                modules.extend(self.conv_block(depth_data["first_conv"]))
-                modules.extend(self.depth_level(depth_data["channels"]))
+                modules.extend(
+                    self.conv_block(cast(Tuple[int], depth_data["first_conv"]))
+                )
+                modules.extend(
+                    self.depth_level(cast(Tuple[int], depth_data["channels"]))
+                )
 
         modules.extend(self.output_conv())
         self.models[name] = SequentialDecoder(modules)
 
     def load_models(
-        self, layers: Optional[Sequence[int]] = None, init_weights: bool = True
-    ) -> Dict[str, enc.Encoder]:
+        self, init_weights: bool = True, layers: Optional[Sequence[int]] = None
+    ) -> Dict[str, enc.SequentialEncoder]:
         if layers is None:
-            layers = VGG_DECODER_DATA.keys()
+            layers = cast(Sequence[int], VGG_DECODER_DATA.keys())
 
         for layer in layers:
             vgg_data = VGG_DECODER_DATA[layer]
-            self.build_model(vgg_data["name"], layer)
+            self.build_model(cast(str, vgg_data["name"]), layer)
             if init_weights:
-                self.init_model(vgg_data["filename"], vgg_data["name"])
+                self.init_model(
+                    cast(str, vgg_data["filename"]), cast(str, vgg_data["name"])
+                )
         return self.models
 
 
 class DecoderVGGModels(PretrainedVGGModels):
-    def download_models(self):
+    def download_models(self) -> None:
         for id, filename in enumerate(DECODER_FILES, 1):
             self.download(id, filename)
+
+    def load_models(self) -> Dict[str, enc.SequentialEncoder]:
+        return cast(VGGDecoderLoader, self.loader).load_models(layers=self.layers)
 
 
 def vgg_decoders(
@@ -143,4 +154,4 @@ def vgg_decoders(
     vgg_decoder = DecoderVGGModels(
         model_dir, layers=hyper_parameters.decoder.layers, loader=loader
     )
-    return vgg_decoder.load_models()
+    return cast(Dict[str, SequentialDecoder], vgg_decoder.load_models())

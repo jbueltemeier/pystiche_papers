@@ -4,9 +4,9 @@ from os import path
 
 import pystiche_papers.li_et_al_2017 as paper
 from pystiche import image, misc, optim
-
 from pystiche_papers.li_et_al_2017._modules import wct_transformer
 from pystiche_papers.li_et_al_2017._utils import hyper_parameters as _hyper_parameters
+
 
 def training(args):
     contents = ("women1", "flower", "vincent", "women2", "women3", "bridge", "tubingen")

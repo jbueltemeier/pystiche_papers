@@ -1,7 +1,8 @@
-from typing import Optional, cast, Union
+from typing import Optional, Union, cast
 
 import torch
 from torch import nn
+
 from pystiche_papers.utils import HyperParameters
 
 from ._modules import wct_transformer

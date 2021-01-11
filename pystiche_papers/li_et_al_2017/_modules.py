@@ -12,7 +12,12 @@ from ._encoders import vgg_multi_layer_encoder
 from ._transform import wct
 from ._utils import hyper_parameters as _hyper_parameters
 
-__all__ = ["WCTAutoEncoder", "TransformAutoEncoderContainer"]
+__all__ = [
+    "_AutoEncoder",
+    "_TransformAutoEncoder",
+    "WCTAutoEncoder",
+    "TransformAutoEncoderContainer",
+    "wct_transformer"]
 
 
 class _AutoEncoder(pystiche.Module):

@@ -30,15 +30,17 @@ def training(args):
     images.download(args.image_source_dir)
 
     hyper_parameters = _hyper_parameters(impl_params=args.impl_params)
+
+    transformer = wct_transformer(
+        impl_params=args.impl_params, hyper_parameters=hyper_parameters
+    )
+    transformer = transformer.to(args.device)
+
     for style in styles:
         style_image = images[style].read(
             device=args.device, size=(image_size, image_size)
         )
 
-        transformer = wct_transformer(
-            impl_params=args.impl_params, hyper_parameters=hyper_parameters
-        )
-        transformer = transformer.to(args.device)
         transformer.set_target_image(style_image)
 
         for content in contents:

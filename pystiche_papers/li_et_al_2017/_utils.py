@@ -71,7 +71,6 @@ class PretrainedVGGModels(object):
         if download:
             self.download_models()
 
-        self.load_models()
         super().__init__()
 
     def url(self, id: int, filename: str) -> str:

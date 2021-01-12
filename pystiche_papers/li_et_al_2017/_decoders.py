@@ -22,32 +22,27 @@ DECODER_FILES = (
 VGG_DECODER_DATA = {
     1: {
         "name": "relu1_1",
-        "first_conv": (64, 3),
-        "channels": (),
+        "channels": (64, 64, 3),
         "filename": "feature_invertor_conv1_1.pth",
     },
     2: {
         "name": "relu2_1",
-        "first_conv": (128, 64),
-        "channels": (64, 64),
+        "channels": (128, 128, 64),
         "filename": "feature_invertor_conv2_1.pth",
     },
     3: {
         "name": "relu3_1",
-        "first_conv": (256, 128),
-        "channels": (128, 128),
+        "channels": (256, 256, 256, 256, 128),
         "filename": "feature_invertor_conv3_1.pth",
     },
     4: {
         "name": "relu4_1",
-        "first_conv": (512, 256),
-        "channels": (256, 256, 256, 256),
+        "channels": (512, 512, 512, 512, 256),
         "filename": "feature_invertor_conv4_1.pth",
     },
     5: {
         "name": "relu5_1",
-        "first_conv": (512, 512),
-        "channels": (512, 512, 512, 512),
+        "channels": (512, 512),
         "filename": "feature_invertor_conv5_1.pth",
     },
 }
@@ -64,9 +59,9 @@ class SequentialDecoder(enc.SequentialEncoder):
         super().__init__(modules=modules)
 
 
-class VGGDecoderLoader(ModelLoader):
-    def __init__(self, root: str) -> None:
-        super().__init__(root=root)
+class VGGDecoderBuilder(object):
+    def __init__(self) -> None:
+        super().__init__()
 
     def conv_block(self, channels: Tuple[int]) -> Sequence[nn.Module]:
         modules: List[nn.Module] = []
@@ -82,14 +77,28 @@ class VGGDecoderLoader(ModelLoader):
         )
         return modules
 
+    def input_conv(self, layer: int) -> Sequence[nn.Module]:
+        modules: List[nn.Module] = []
+        depth_data = VGG_DECODER_DATA[layer]
+        modules.append(nn.ReflectionPad2d((1, 1, 1, 1)))
+        modules.append(
+            nn.Conv2d(
+                cast(Tuple, depth_data["channels"])[-2],
+                cast(Tuple, depth_data["channels"])[-1],
+                kernel_size=3,
+            )
+        )
+        modules.append(nn.ReLU())
+        return modules
+
     def output_conv(self) -> Sequence[nn.Module]:
         modules: List[nn.Module] = []
         depth_data = VGG_DECODER_DATA[1]
         modules.append(nn.ReflectionPad2d((1, 1, 1, 1)))
         modules.append(
             nn.Conv2d(
-                cast(Tuple, depth_data["first_conv"])[0],
-                cast(Tuple, depth_data["first_conv"])[1],
+                cast(Tuple, depth_data["channels"])[-2],
+                cast(Tuple, depth_data["channels"])[-1],
                 kernel_size=3,
             )
         )
@@ -100,21 +109,33 @@ class VGGDecoderLoader(ModelLoader):
         modules.extend(self.conv_block(channels))
         return modules
 
-    def build_model(self, name: str, layer: int) -> None:  # type: ignore[override]
+    def build_model(self, layer: int) -> SequentialDecoder:
         modules: List[nn.Module] = []
 
         if layer > 1:
-            for depth in range(layer, 1, -1):
+            modules.extend(self.input_conv(layer))
+
+            for depth in range(layer - 1, 1, -1):
                 depth_data = VGG_DECODER_DATA[depth]
-                modules.extend(
-                    self.conv_block(cast(Tuple[int], depth_data["first_conv"]))
-                )
                 modules.extend(
                     self.depth_level(cast(Tuple[int], depth_data["channels"]))
                 )
 
+            channels = cast(Tuple, VGG_DECODER_DATA[1]["channels"])[:-1]
+            modules.extend(self.depth_level(cast(Tuple[int], channels)))
+
         modules.extend(self.output_conv())
-        self.models[name] = SequentialDecoder(modules)
+
+        return SequentialDecoder(modules)
+
+
+class VGGDecoderLoader(ModelLoader):
+    def __init__(self, root: str) -> None:
+        super().__init__(root=root)
+
+    def build_model(self, name: str, layer: int) -> None:  # type: ignore[override]
+        builder = VGGDecoderBuilder()
+        self.models[name] = builder.build_model(layer)
 
     def load_models(
         self, init_weights: bool = True, layers: Optional[Sequence[int]] = None

@@ -24,7 +24,7 @@ def training(args):
         "women_dress",
     )
 
-    image_size = 512
+    image_size = 256
 
     images = paper.images()
     images.download(args.image_source_dir)

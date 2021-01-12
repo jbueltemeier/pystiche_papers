@@ -1,11 +1,9 @@
 import pytorch_testing_utils as ptu
-
 import torch
 from torch import nn
 
-from pystiche import enc
-
 import pystiche_papers.li_et_al_2017 as paper
+from pystiche import enc
 
 
 def test_AutoEncoder_call(input_image):

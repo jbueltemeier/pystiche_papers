@@ -17,7 +17,8 @@ __all__ = [
     "_TransformAutoEncoder",
     "WCTAutoEncoder",
     "TransformAutoEncoderContainer",
-    "wct_transformer"]
+    "wct_transformer",
+]
 
 
 class _AutoEncoder(pystiche.Module):

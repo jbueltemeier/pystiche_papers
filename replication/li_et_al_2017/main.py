@@ -58,6 +58,7 @@ def training(args):
             output_name += str(image_size)
             output_file = path.join(args.image_results_dir, f"{output_name}.png")
             image.write_image(output_image, output_file)
+            print("ready")
 
 
 def parse_input():

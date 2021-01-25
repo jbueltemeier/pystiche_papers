@@ -1,11 +1,11 @@
 from os import path
-from typing import List, Optional, Sequence, Tuple, cast
+from typing import List, Optional, Sequence, Tuple, cast, Dict, Union
 
 from torch import nn
 
 from pystiche import enc
 
-from ._utils import ModelLoader, PretrainedVGGModels, channel_progression
+from ._utils import ModelLoader, PretrainedVGGModels
 
 __all__ = ["VGGEncoderLoader", "vgg_multi_layer_encoder"]
 
@@ -13,41 +13,10 @@ BASE_URL = (
     "https://github.com/pietrocarbo/deep-transfer/raw/master/models/autoencoder_vgg19/"
 )
 
-ENCODER_FILES = (
-    "vgg_normalised_conv1_1.pth",
-    "vgg_normalised_conv2_1.pth",
-    "vgg_normalised_conv3_1.pth",
-    "vgg_normalised_conv4_1.pth",
-    "vgg_normalised_conv5_1.pth",
-)
+ENCODER_FILE = "vgg_normalised_conv5_1.pth"
 
-VGG_ENCODER_DATA = {
-    0: {"name": "input_conv", "channels": (3, 3), "filename": ""},
-    1: {
-        "name": "relu1_1",
-        "channels": (3, 64, 64),
-        "filename": "vgg_normalised_conv1_1.pth",
-    },
-    2: {
-        "name": "relu2_1",
-        "channels": (64, 128, 128),
-        "filename": "vgg_normalised_conv2_1.pth",
-    },
-    3: {
-        "name": "relu3_1",
-        "channels": (128, 256, 256, 256, 256),
-        "filename": "vgg_normalised_conv3_1.pth",
-    },
-    4: {
-        "name": "relu4_1",
-        "channels": (256, 512, 512, 512, 512),
-        "filename": "vgg_normalised_conv4_1.pth",
-    },
-    5: {
-        "name": "relu5_1",
-        "channels": (512, 512),
-        "filename": "vgg_normalised_conv5_1.pth",
-    },
+cfgs: Dict[str, List[Union[str, int]]] = {
+    'vgg19': ['R', 64, 'R', 64, 'M', 'R', 128, 'R', 128, 'M', 'R', 256, 'R', 256, 'R', 256, 'R', 256, 'M', 'R', 512, 'R', 512, 'R', 512, 'R', 512, 'M', 'R', 512],
 }
 
 
@@ -55,53 +24,28 @@ class VGGEncoderBuilder(object):
     def __init__(self) -> None:
         super().__init__()
 
-    def conv_block(self, channels: Tuple[int]) -> Sequence[nn.Module]:
+    def conv_block(self, in_channels: int, out_channels: int) -> Sequence[nn.Module]:
+        return [
+            nn.Conv2d(in_channels, out_channels, kernel_size=3),
+            nn.ReLU()
+        ]
+
+    def input_conv(self) -> nn.Module:
+        return nn.Conv2d(3, 3, kernel_size=1)
+
+    def build_model(self) -> enc.SequentialEncoder:
         modules: List[nn.Module] = []
-        channel_progression(
-            lambda in_channels, out_channels: modules.extend(
-                [
-                    nn.ReflectionPad2d((1, 1, 1, 1)),
-                    nn.Conv2d(in_channels, out_channels, kernel_size=3),
-                    nn.ReLU(),
-                ]
-            ),
-            channels=channels,
-        )
-        return modules
+        modules.append(self.input_conv())
 
-    def input_conv(self) -> Sequence[nn.Module]:
-        modules: List[nn.Module] = []
-        depth_data = VGG_ENCODER_DATA[0]
-        modules.append(
-            nn.Conv2d(
-                cast(Tuple, depth_data["channels"])[0],
-                cast(Tuple, depth_data["channels"])[1],
-                kernel_size=1,
-            )
-        )
-        return modules
-
-    def output_conv(self, depth: int) -> Sequence[nn.Module]:
-        modules: List[nn.Module] = []
-        depth_data = VGG_ENCODER_DATA[depth]
-        modules.extend(self.conv_block(cast(Tuple[int], depth_data["channels"])[:2]))
-        return modules
-
-    def depth_level(self, channels: Tuple[int]) -> Sequence[nn.Module]:
-        modules: List[nn.Module] = []
-        modules.extend(self.conv_block(channels))
-        modules.append(nn.MaxPool2d((2, 2), (2, 2), (0, 0), ceil_mode=True))
-        return modules
-
-    def build_model(self, layer: int) -> enc.SequentialEncoder:
-        modules: List[nn.Module] = []
-        modules.extend(self.input_conv())
-
-        for depth in range(1, layer):
-            depth_data = VGG_ENCODER_DATA[depth]
-            modules.extend(self.depth_level(cast(Tuple[int], depth_data["channels"])))
-
-        modules.extend(self.output_conv(layer))
+        in_channels = 3
+        for cfg in cfgs["vgg19"]:
+            if isinstance(cfg, int):
+                modules.extend(self.conv_block(in_channels, cfg))
+                in_channels = cfg
+            elif cfg == "R":
+                modules.append(nn.ReflectionPad2d((1, 1, 1, 1)))
+            else:  # isinstance(cfg, str) ('M')
+                modules.append(nn.MaxPool2d((2, 2), (2, 2), (0, 0), ceil_mode=True))
 
         return enc.SequentialEncoder(modules)
 
@@ -109,25 +53,17 @@ class VGGEncoderBuilder(object):
 class VGGEncoderLoader(ModelLoader):
     def __init__(self, root: str,) -> None:
         super().__init__(root=root)
+        self.builder = VGGEncoderBuilder()
 
-    def build_model(self, name: str, layer: int) -> None:  # type: ignore[override]
-        builder = VGGEncoderBuilder()
-        self.models[name] = builder.build_model(layer)
+    def build_model(self, name: str) -> None:  # type: ignore[override]
+        self.models[name] = self.builder.build_model()
 
-    def load_models(
-        self, init_weights: bool = True, layer: Optional[int] = None,
-    ) -> enc.MultiLayerEncoder:
-        if layer is None:
-            layer = len(VGG_ENCODER_DATA.keys()) - 1
-
-        vgg_data = VGG_ENCODER_DATA[layer]
-        self.build_model(cast(str, vgg_data["name"]), layer)
+    def load_models(self, init_weights: bool = True) -> enc.MultiLayerEncoder:
+        self.build_model("vgg19")
         if init_weights:
-            self.init_model(
-                cast(str, vgg_data["filename"]), cast(str, vgg_data["name"])
-            )
+            self.init_model(ENCODER_FILE, "vgg19")
 
-        return self._multi_layer_encoder(self.models[cast(str, vgg_data["name"])])
+        return self._multi_layer_encoder(self.models["vgg19"])
 
     def _multi_layer_encoder(
         self, encoder: enc.SequentialEncoder

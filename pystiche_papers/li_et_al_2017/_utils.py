@@ -103,5 +103,5 @@ def hyper_parameters(impl_params: bool = True) -> HyperParameters:
     r"""Hyper parameters from :cite:`Li2017`."""
     return HyperParameters(
         transform=HyperParameters(weight=0.6 if impl_params else 1.0,),
-        decoder=HyperParameters(layers=[5, 4, 3, 2, 1],),
+        decoder=HyperParameters(layers=["relu5_1", "relu4_1", "relu3_1", "relu2_1", "relu1_1"],),
     )

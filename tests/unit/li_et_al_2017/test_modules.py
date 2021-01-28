@@ -19,3 +19,23 @@ def test_AutoEncoder_call(input_image):
     actual = autoencoder(input_image)
     desired = decoder(encoder(input_image))
     ptu.assert_allclose(actual, desired)
+
+
+def test_TransformAutoEncoder_call(input_image, style_image):
+    class TestTransformAutoEncoder(paper._TransformAutoEncoder):
+        def transform(
+            self, enc: torch.Tensor, target_enc: torch.Tensor
+        ) -> torch.Tensor:
+            return enc + torch.mean(target_enc)
+
+    encoder = enc.SequentialEncoder((nn.Conv2d(3, 3, 1),))
+    decoder = enc.SequentialEncoder((nn.Conv2d(3, 3, 1),))
+
+    autoencoder = TestTransformAutoEncoder(encoder, decoder)
+    autoencoder.set_target_image(style_image)
+
+    actual = autoencoder(input_image)
+    style_enc = encoder(style_image)
+    content_enc = encoder(input_image)
+    desired = decoder(content_enc + torch.mean(style_enc))
+    ptu.assert_allclose(actual, desired)

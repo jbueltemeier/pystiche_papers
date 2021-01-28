@@ -5,9 +5,10 @@ import torch
 
 import pystiche
 from pystiche import enc
+from pystiche_papers.li_et_al_2017._decoders import SequentialDecoder
 from pystiche_papers.utils import HyperParameters
 
-from ._decoders import SequentialDecoder, vgg_decoders
+from ._decoders import vgg_decoders
 from ._encoders import vgg_multi_layer_encoder
 from ._transform import wct
 from ._utils import hyper_parameters as _hyper_parameters
@@ -33,6 +34,12 @@ class _AutoEncoder(pystiche.Module):
         super().__init__()
         self.encoder = encoder
         self.decoder = decoder
+        if encoder.layer != decoder.layer:
+            msg = (
+                f"The layer of the encoder {encoder.layer} and decoder {decoder.layer}"
+                " do not match."
+            )
+            raise RuntimeError(msg)
 
     @abstractmethod
     def process_input_image(self, image: torch.Tensor) -> torch.Tensor:
@@ -126,7 +133,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
         self,
         multi_layer_encoder: enc.MultiLayerEncoder,
         decoders: Dict[
-            str, SequentialDecoder
+            Union[int, str], SequentialDecoder
         ],  # TODO: Order is important. Add sort and parameter reverse order?
         get_autoencoder: Callable[
             [enc.Encoder, SequentialDecoder, float], _TransformAutoEncoder
@@ -142,7 +149,7 @@ class TransformAutoEncoderContainer(pystiche.Module):
             return get_autoencoder(encoder, decoder, weight)
 
         named_autoencoder = [
-            (layer, get_single_autoencoder(layer, weight),)
+            (str(layer), get_single_autoencoder(str(layer), weight),)
             for layer, weight in zip(decoders.keys(), cast(Sequence, level_weights))
         ]
         super().__init__()

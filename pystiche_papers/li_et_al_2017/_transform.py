@@ -18,7 +18,7 @@ def whitening(
     mean_enc = enc - torch.mean(enc, 1).unsqueeze(1).expand_as(enc)
 
     cov = torch.mm(mean_enc, mean_enc.t()).div((width * height) - 1)
-    u, s, v = torch.svd(cov, some=False)
+    _, s, v = torch.svd(cov, some=False)
 
     reduced_channels = (
         channels - bisect.bisect_left(list(s), eps) if reduce_channels else channels
@@ -46,7 +46,7 @@ def coloring(
     mean_enc = style_enc - mean_style
 
     style_cov = torch.mm(mean_enc, mean_enc.t()).div((style_width * style_height) - 1)
-    style_u, style_s, style_v = torch.svd(style_cov, some=False)
+    _, style_s, style_v = torch.svd(style_cov, some=False)
 
     reduced_channels = (
         channels - bisect.bisect_left(list(style_s), eps)

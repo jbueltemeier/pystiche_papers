@@ -1,73 +1,68 @@
 import bisect
+from typing import List, Tuple
 
 import torch
 
-from pystiche.image.utils import extract_image_size, extract_num_channels
+from pystiche.image.utils import extract_num_channels
 
 __all__ = [
     "wct",
 ]
 
 
-def whitening(
-    enc: torch.Tensor, reduce_channels: bool = True, eps: float = 0.00001
-) -> torch.Tensor:
+def center_feature_maps(enc: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
     channels = extract_num_channels(enc)
-    width, height = extract_image_size(enc)
     enc = enc.view(channels, -1)
-    mean_enc = enc - torch.mean(enc, 1).unsqueeze(1).expand_as(enc)
+    mean_enc = torch.mean(enc, 1).unsqueeze(1).expand_as(enc)
+    return enc - mean_enc, mean_enc
 
-    cov = torch.mm(mean_enc, mean_enc.t()).div((width * height) - 1)
-    _, s, v = torch.svd(cov, some=False)
 
-    reduced_channels = (
-        channels - bisect.bisect_left(list(s), eps) if reduce_channels else channels
+def maybe_reduce_channels(
+        channels: int,
+        eigenvalues: List[int],
+        reduce_channels: bool = True,
+        eps: float = 0.00001,
+) -> int:
+    return (
+        channels - bisect.bisect_left(eigenvalues, eps) if reduce_channels else channels
     )
-    d = (s[0:reduced_channels]).pow(-0.5)
 
+
+def get_linear_transform(
+        enc: torch.Tensor,
+        reduce_channels: bool = True,
+        inverse: bool = False,
+        eps: float = 0.00001,
+) -> torch.Tensor:
+    cov = torch.mm(enc, enc.t()).div(enc.size()[1] - 1)
+    _, s, v = torch.svd(cov, some=False)
+    reduced_channels = maybe_reduce_channels(
+        enc.size()[1], list(s), reduce_channels=reduce_channels, eps=eps
+    )
+    d = (
+        (s[0:reduced_channels]).pow(0.5)
+        if inverse
+        else (s[0:reduced_channels]).pow(-0.5)
+    )
     transform = torch.mm(v[:, 0:reduced_channels], torch.diag(d))
     transform = torch.mm(transform, (v[:, 0:reduced_channels].t()))
-    return torch.mm(transform, mean_enc)
-
-
-def coloring(
-    whitened_enc: torch.Tensor,
-    style_enc: torch.Tensor,
-    reduce_channels: bool = True,
-    eps: float = 0.00001,
-) -> torch.Tensor:
-    if len(whitened_enc.shape) != 2:
-        channels = extract_num_channels(whitened_enc)
-        whitened_enc = whitened_enc.view(channels, -1)
-    channels = extract_num_channels(style_enc)
-    style_width, style_height = extract_image_size(style_enc)
-    style_enc = style_enc.view(channels, -1)
-    mean_style = torch.mean(style_enc, 1).unsqueeze(1).expand_as(style_enc)
-    mean_enc = style_enc - mean_style
-
-    style_cov = torch.mm(mean_enc, mean_enc.t()).div((style_width * style_height) - 1)
-    _, style_s, style_v = torch.svd(style_cov, some=False)
-
-    reduced_channels = (
-        channels - bisect.bisect_left(list(style_s), eps)
-        if reduce_channels
-        else channels
-    )
-    style_d = (style_s[0:reduced_channels]).pow(0.5)
-
-    transform = torch.mm(style_v[:, 0:reduced_channels], torch.diag(style_d))
-    transform = torch.mm(transform, style_v[:, 0:reduced_channels].t())
-    colored = torch.mm(transform, whitened_enc)
-    return colored + mean_style
+    return transform
 
 
 def wct(
-    content_enc: torch.Tensor,
-    style_enc: torch.Tensor,
-    alpha: float,
-    reduce_channels: bool = True,
+        content_enc: torch.Tensor,
+        style_enc: torch.Tensor,
+        alpha: float,
+        reduce_channels: bool = True,
 ) -> torch.Tensor:
-    whitened_enc = whitening(content_enc, reduce_channels=reduce_channels)
-    colored_enc = coloring(whitened_enc, style_enc, reduce_channels=reduce_channels)
+    enc, _ = center_feature_maps(content_enc)
+    linear_transform = get_linear_transform(enc, reduce_channels=reduce_channels)
+    whitened_enc = torch.mm(linear_transform, enc)
+    style_enc, mean_style_enc = center_feature_maps(style_enc)
+    style_linear_transform = get_linear_transform(
+        style_enc, reduce_channels=reduce_channels, inverse=True
+    )
+    mean_colored_enc = torch.mm(style_linear_transform, whitened_enc)
+    colored_enc = mean_colored_enc + mean_style_enc
     colored_enc = colored_enc.view_as(content_enc)
     return alpha * colored_enc + (1.0 - alpha) * content_enc

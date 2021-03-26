@@ -2,7 +2,7 @@ import os
 from argparse import Namespace
 from os import path
 
-import pystiche_papers.bueltemeier_2021 as paper
+import pystiche_papers.bueltemeier as paper
 from pystiche import image, misc
 from pystiche_papers import utils
 

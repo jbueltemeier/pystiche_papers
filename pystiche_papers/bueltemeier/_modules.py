@@ -91,7 +91,11 @@ def encoder() -> pystiche.SequentialModule:
 def decoder() -> pystiche.SequentialModule:
     class ValueRangeDelimiter(nn.Module):
         def forward(self, x: torch.Tensor) -> torch.Tensor:
-            return cast(torch.Tensor, grayscale_to_fakegrayscale(torch.tanh(x)))
+            return torch.tanh(x)
+
+    class FakeGrayscaleOutput(nn.Module):
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return cast(torch.Tensor, grayscale_to_fakegrayscale(x))
 
     modules = (
         conv_block(
@@ -102,6 +106,7 @@ def decoder() -> pystiche.SequentialModule:
         ),
         AutoPadConv2d(in_channels=32, out_channels=1, kernel_size=9,),
         ValueRangeDelimiter(),
+        FakeGrayscaleOutput(),
     )
 
     return pystiche.SequentialModule(*modules)

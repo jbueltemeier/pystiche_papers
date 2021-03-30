@@ -93,10 +93,6 @@ def decoder() -> pystiche.SequentialModule:
         def forward(self, x: torch.Tensor) -> torch.Tensor:
             return torch.tanh(x)
 
-    class FakeGrayscaleOutput(nn.Module):
-        def forward(self, x: torch.Tensor) -> torch.Tensor:
-            return cast(torch.Tensor, grayscale_to_fakegrayscale(x))
-
     modules = (
         conv_block(
             in_channels=128, out_channels=64, kernel_size=3, stride=2, upsample=True,
@@ -106,20 +102,23 @@ def decoder() -> pystiche.SequentialModule:
         ),
         AutoPadConv2d(in_channels=32, out_channels=1, kernel_size=9,),
         ValueRangeDelimiter(),
-        FakeGrayscaleOutput(),
     )
 
     return pystiche.SequentialModule(*modules)
 
 
 class Transformer(nn.Module):
-    def __init__(self) -> None:
+    def __init__(self, fakegrayscale: bool = True) -> None:
         super().__init__()
         self.encoder = encoder()
         self.decoder = decoder()
+        self.fakegrayscale = fakegrayscale
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return cast(torch.Tensor, self.decoder(self.encoder(x)))
+        output = cast(torch.Tensor, self.decoder(self.encoder(x)))
+        if not self.fakegrayscale:
+            return output
+        return cast(torch.Tensor, grayscale_to_fakegrayscale(output))
 
 
 def transformer() -> Transformer:

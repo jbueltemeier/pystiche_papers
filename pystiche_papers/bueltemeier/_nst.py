@@ -28,9 +28,7 @@ def training(
 
     Args:
         content_image_loader: Content images used as input for the ``transformer``.
-        style_image: Style image on which the ``transformer`` should be trained. If
-            ``str``, the image is read from
-            :func:`~pystiche_papers.bueltemeier_2021.images`.
+        style_image: Style image on which the ``transformer`` should be trained.
         hyper_parameters: If omitted,
             :func:`~pystiche_papers.bueltemeier_2021.hyper_parameters` is used.
 
@@ -55,10 +53,6 @@ def training(
     style_image = style_transform(style_image)
     style_image = batch_up_image(style_image, loader=content_image_loader)
 
-    # preprocessor = _preprocessor()
-    # preprocessor = preprocessor.to(device)
-    # style_image = preprocessor(style_image)
-
     criterion.set_style_image(style_image)
 
     def criterion_update_fn(input_image: torch.Tensor, criterion: nn.Module) -> None:
@@ -75,7 +69,7 @@ def training(
 
 
 def stylization(input_image: torch.Tensor, transformer: nn.Module,) -> torch.Tensor:
-    r"""Transforms an input image into a stylised version using the transfromer.
+    r"""Transforms an input image into a stylised version using the transformer.
 
     Args:
         input_image: Image to be stylised.
@@ -88,16 +82,9 @@ def stylization(input_image: torch.Tensor, transformer: nn.Module,) -> torch.Ten
 
     transform = _content_transform()
     transform = transform.to(device)
-    # preprocessor = _preprocessor()
-    # preprocessor = preprocessor.to(device)
-
-    # postprocessor = _postprocessor()
-    # postprocessor = postprocessor.to(device)
 
     with torch.no_grad():
         input_image = transform(input_image)
-        # input_image = preprocessor(input_image)
         output_image = transformer(input_image)
-        # output_image = postprocessor(output_image)
 
     return cast(torch.Tensor, output_image).detach()

@@ -3,27 +3,16 @@ from typing import Optional, Sequence, Tuple
 from torch import nn, optim
 
 from pystiche import enc
-from pystiche.image import transforms
 from pystiche_papers.gatys_ecker_bethge_2016 import (
     compute_layer_weights as _compute_layer_weights,
 )
 from pystiche_papers.utils import HyperParameters
 
 __all__ = [
-    "preprocessor",
-    "postprocessor",
     "optimizer",
     "multi_layer_encoder",
     "hyper_parameters",
 ]
-
-
-def preprocessor() -> nn.Module:
-    return transforms.CaffePreprocessing()
-
-
-def postprocessor() -> nn.Module:
-    return transforms.CaffePostprocessing()
 
 
 def optimizer(transformer: nn.Module) -> optim.Adam:

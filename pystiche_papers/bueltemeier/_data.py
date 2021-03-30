@@ -40,6 +40,9 @@ def content_transform(
     transforms_: List[nn.Module] = [
         transforms.Resize(image_size, edge=hyper_parameters.content_transform.edge),
         transforms.CenterCrop((image_size, image_size)),
+        # A grayscale transformer is trained. For the criterion these images have to be
+        # converted into a fakegrayscale image.
+        # See criterion_update_fn in _nst.py and transformer output in _modules.py.
         transforms.RGBToGrayscale(),
     ]
     return nn.Sequential(*transforms_)

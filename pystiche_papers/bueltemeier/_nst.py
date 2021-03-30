@@ -20,9 +20,9 @@ __all__ = ["training", "stylization"]
 
 
 def training(
-        content_image_loader: DataLoader,
-        style_image: torch.Tensor,
-        hyper_parameters: Optional[HyperParameters] = None,
+    content_image_loader: DataLoader,
+    style_image: torch.Tensor,
+    hyper_parameters: Optional[HyperParameters] = None,
 ) -> nn.Module:
     r"""Training a transformer for the NST.
 

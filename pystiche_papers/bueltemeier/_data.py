@@ -31,7 +31,7 @@ class OptionalRGBAToRGB(transforms.Transform):
 
 
 def content_transform(
-        hyper_parameters: Optional[HyperParameters] = None,
+    hyper_parameters: Optional[HyperParameters] = None,
 ) -> nn.Sequential:
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
@@ -46,7 +46,7 @@ def content_transform(
 
 
 def style_transform(
-        hyper_parameters: Optional[HyperParameters] = None,
+    hyper_parameters: Optional[HyperParameters] = None,
 ) -> nn.Sequential:
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
@@ -90,7 +90,7 @@ def dataset(root: str, transform: Optional[nn.Module] = None,) -> ImageFolderDat
 
 
 def batch_sampler(
-        data_source: Sized, hyper_parameters: Optional[HyperParameters] = None,
+    data_source: Sized, hyper_parameters: Optional[HyperParameters] = None,
 ) -> FiniteCycleBatchSampler:
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
@@ -102,9 +102,9 @@ def batch_sampler(
 
 
 def image_loader(
-        dataset: Dataset,
-        hyper_parameters: Optional[HyperParameters] = None,
-        pin_memory: bool = True,
+    dataset: Dataset,
+    hyper_parameters: Optional[HyperParameters] = None,
+    pin_memory: bool = True,
 ) -> DataLoader:
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()

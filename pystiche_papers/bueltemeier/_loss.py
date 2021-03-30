@@ -15,8 +15,8 @@ __all__ = [
 
 
 def content_loss(
-        multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
-        hyper_parameters: Optional[HyperParameters] = None,
+    multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
+    hyper_parameters: Optional[HyperParameters] = None,
 ) -> ops.FeatureReconstructionOperator:
     if multi_layer_encoder is None:
         multi_layer_encoder = _multi_layer_encoder()
@@ -31,8 +31,8 @@ def content_loss(
 
 
 def gram_style_loss(
-        multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
-        hyper_parameters: Optional[HyperParameters] = None,
+    multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
+    hyper_parameters: Optional[HyperParameters] = None,
 ) -> ops.MultiLayerEncodingOperator:
     if multi_layer_encoder is None:
         multi_layer_encoder = _multi_layer_encoder()
@@ -53,8 +53,8 @@ def gram_style_loss(
 
 
 def mrf_style_loss(
-        multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
-        hyper_parameters: Optional[HyperParameters] = None,
+    multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
+    hyper_parameters: Optional[HyperParameters] = None,
 ) -> ops.MultiLayerEncodingOperator:
     if multi_layer_encoder is None:
         multi_layer_encoder = _multi_layer_encoder()
@@ -80,8 +80,8 @@ def mrf_style_loss(
 
 
 def perceptual_loss(
-        multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
-        hyper_parameters: Optional[HyperParameters] = None,
+    multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
+    hyper_parameters: Optional[HyperParameters] = None,
 ) -> loss.PerceptualLoss:
     if multi_layer_encoder is None:
         multi_layer_encoder = _multi_layer_encoder()

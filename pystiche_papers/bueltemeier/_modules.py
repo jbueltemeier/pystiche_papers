@@ -5,6 +5,7 @@ from torch import nn
 
 import pystiche
 from pystiche.image.transforms.functional import grayscale_to_fakegrayscale
+
 from ..utils import AutoPadConv2d, AutoPadConvTranspose2d, ResidualBlock
 
 __all__ = [
@@ -18,12 +19,12 @@ __all__ = [
 
 
 def conv(
-        in_channels: int,
-        out_channels: int,
-        kernel_size: Union[Tuple[int, int], int],
-        stride: Union[Tuple[int, int], int] = 1,
-        padding: Optional[Union[Tuple[int, int], int]] = None,
-        upsample: bool = False,
+    in_channels: int,
+    out_channels: int,
+    kernel_size: Union[Tuple[int, int], int],
+    stride: Union[Tuple[int, int], int] = 1,
+    padding: Optional[Union[Tuple[int, int], int]] = None,
+    upsample: bool = False,
 ) -> Union[nn.Conv2d, nn.ConvTranspose2d]:
     cls: Union[Type[nn.Conv2d], Type[nn.ConvTranspose2d]]
     kwargs: Dict[str, Any]
@@ -37,14 +38,14 @@ def conv(
 
 
 def conv_block(
-        in_channels: int,
-        out_channels: int,
-        kernel_size: Union[Tuple[int, int], int],
-        stride: Union[Tuple[int, int], int] = 1,
-        padding: Optional[Union[Tuple[int, int], int]] = None,
-        upsample: bool = False,
-        relu: bool = True,
-        inplace: bool = True,
+    in_channels: int,
+    out_channels: int,
+    kernel_size: Union[Tuple[int, int], int],
+    stride: Union[Tuple[int, int], int] = 1,
+    padding: Optional[Union[Tuple[int, int], int]] = None,
+    upsample: bool = False,
+    relu: bool = True,
+    inplace: bool = True,
 ) -> nn.Sequential:
     modules: List[nn.Module] = [
         conv(
@@ -90,7 +91,7 @@ def encoder() -> pystiche.SequentialModule:
 def decoder() -> pystiche.SequentialModule:
     class ValueRangeDelimiter(nn.Module):
         def forward(self, x: torch.Tensor) -> torch.Tensor:
-            return grayscale_to_fakegrayscale(torch.tanh(x))
+            return cast(torch.Tensor, grayscale_to_fakegrayscale(torch.tanh(x)))
 
     modules = (
         conv_block(

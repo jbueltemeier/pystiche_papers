@@ -13,6 +13,7 @@ from ._data import content_transform as _content_transform
 from ._data import style_transform as _style_transform
 from ._loss import perceptual_loss
 from ._modules import transformer as _transformer
+from ._transformer import transformer as _multiresolution_transformer
 from ._utils import hyper_parameters as _hyper_parameters
 from ._utils import optimizer as _optimizer
 
@@ -38,7 +39,8 @@ def training(
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
 
-    transformer = _transformer()
+    # transformer = _transformer()
+    transformer = _multiresolution_transformer()
     transformer = transformer.train()
     transformer = transformer.to(device)
 

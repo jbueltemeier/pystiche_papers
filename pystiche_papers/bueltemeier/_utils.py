@@ -44,7 +44,7 @@ def hyper_parameters() -> HyperParameters:
         gram_style_loss=HyperParameters(
             layers=gram_style_loss_layers,
             layer_weights=compute_layer_weights(gram_style_loss_layers),
-            score_weight=1e2,
+            score_weight=1e1,
         ),
         mrf_style_loss=HyperParameters(
             layers=("relu3_1", "relu4_1"),
@@ -55,5 +55,5 @@ def hyper_parameters() -> HyperParameters:
         ),
         content_transform=HyperParameters(image_size=512, edge="short"),
         style_transform=HyperParameters(edge_size=512, edge="short"),
-        batch_sampler=HyperParameters(num_batches=20000, batch_size=4),
+        batch_sampler=HyperParameters(num_batches=40000, batch_size=4),
     )

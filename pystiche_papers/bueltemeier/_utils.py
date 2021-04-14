@@ -53,9 +53,9 @@ def hyper_parameters() -> HyperParameters:
             stride=2,
             score_weight=1e-4,
         ),
-        content_transform=HyperParameters(image_size=256, edge="short"),
-        style_transform=HyperParameters(edge_size=256, edge="short"),
-        batch_sampler=HyperParameters(num_batches=40000, batch_size=4),
-        transformer=HyperParameters(levels=2, type="johnson"),
+        content_transform=HyperParameters(image_size=512, edge="short"),
+        style_transform=HyperParameters(edge_size=512, edge="short"),
+        batch_sampler=HyperParameters(num_batches=60000, batch_size=1),
+        transformer=HyperParameters(levels=2, type="ulyanov"),
         loss=HyperParameters(mode="gram"),  # possible modes "gram", "mrf", "combi"
     )

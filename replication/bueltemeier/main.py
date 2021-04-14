@@ -1,15 +1,18 @@
+import csv
 import os
 from argparse import Namespace
 from os import path
+from datetime import datetime
 
 import pystiche_papers.bueltemeier as paper
 from pystiche import image, misc
 from pystiche_papers import utils
+from pystiche_papers.bueltemeier._utils import hyper_parameters as _hyper_parameters
 
 
 def training(args):
     contents = ("karya", "004", "04", "bueltemeier")
-    styles = ("DM100", "MAD20", "Specimen0", "UHD20")
+    styles = ("UHD20", "DM100", "MAD20", "Specimen0")
 
     dataset = paper.dataset(path.join(args.dataset_dir, "content"),)
     image_loader = paper.image_loader(
@@ -24,13 +27,36 @@ def training(args):
         transformer = paper.training(image_loader, style_image)
 
         model_name = f"bueltemeier_2021__{style}"
-        utils.save_state_dict(transformer, model_name, root=args.model_dir)
+        file = utils.save_state_dict(transformer, model_name, root=args.model_dir)
+
+        hyper_parameters = _hyper_parameters()
+
+        now = datetime.now()
+        dt_string = now.strftime("%Y%m%d_%H_%M_%S")
+
+        dict_data = {
+            "filename": file,
+            "mode": hyper_parameters.loss.mode,
+            "transformer_type":hyper_parameters.transformer.type,
+            "transformer_levels":hyper_parameters.transformer.levels,
+            "num_batches":hyper_parameters.batch_sampler.num_batches,
+            "batch_size":hyper_parameters.batch_sampler.batch_size,
+            "image_size":hyper_parameters.content_transform.image_size,
+            "gram_score_weight":hyper_parameters.gram_style_loss.score_weight,
+            "gram_layers":str(len(hyper_parameters.gram_style_loss.layers)),
+            "mrf_score_weight":hyper_parameters.mrf_style_loss.score_weight,
+            "time": dt_string
+        }
+        data_columns = dict_data.keys()
+        with open("model_data.csv", mode="a") as data_file:
+            writer = csv.DictWriter(data_file, fieldnames=data_columns)
+            writer.writerow(dict_data)
 
         for content in contents:
             content_image = images[content].read(device=args.device)
             output_image = paper.stylization(content_image, transformer)
 
-            output_name = f"{style}_{content}"
+            output_name = f"{style}_{content}_{dt_string}"
             output_file = path.join(args.image_results_dir, f"{output_name}.png")
             image.write_image(output_image, output_file)
 

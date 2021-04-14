@@ -58,7 +58,7 @@ def training(
     style_image = style_transform(style_image)
     style_image = batch_up_image(style_image, loader=content_image_loader)
 
-    if ops.OperatorContainer == type(criterion.style_loss):
+    if isinstance(type(criterion.style_loss), ops.OperatorContainer.__class__):
         for op in criterion.style_loss.operators():
             op.set_target_image(style_image)
     else:

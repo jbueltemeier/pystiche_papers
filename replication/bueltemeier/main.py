@@ -1,8 +1,8 @@
 import csv
 import os
 from argparse import Namespace
-from os import path
 from datetime import datetime
+from os import path
 
 import pystiche_papers.bueltemeier as paper
 from pystiche import image, misc
@@ -37,15 +37,17 @@ def training(args):
         dict_data = {
             "filename": file,
             "mode": hyper_parameters.loss.mode,
-            "transformer_type":hyper_parameters.transformer.type,
-            "transformer_levels":hyper_parameters.transformer.levels,
-            "num_batches":hyper_parameters.batch_sampler.num_batches,
-            "batch_size":hyper_parameters.batch_sampler.batch_size,
-            "image_size":hyper_parameters.content_transform.image_size,
-            "gram_score_weight":hyper_parameters.gram_style_loss.score_weight,
-            "gram_layers":str(len(hyper_parameters.gram_style_loss.layers)),
-            "mrf_score_weight":hyper_parameters.mrf_style_loss.score_weight,
-            "time": dt_string
+            "regularization": hyper_parameters.regularization.mode,
+            "regularization_score_weight": hyper_parameters.regularization.score_weight,
+            "transformer_type": hyper_parameters.transformer.type,
+            "transformer_levels": hyper_parameters.transformer.levels,
+            "num_batches": hyper_parameters.batch_sampler.num_batches,
+            "batch_size": hyper_parameters.batch_sampler.batch_size,
+            "image_size": hyper_parameters.content_transform.image_size,
+            "gram_score_weight": hyper_parameters.gram_style_loss.score_weight,
+            "gram_layers": str(len(hyper_parameters.gram_style_loss.layers)),
+            "mrf_score_weight": hyper_parameters.mrf_style_loss.score_weight,
+            "time": dt_string,
         }
         data_columns = dict_data.keys()
         with open("model_data.csv", mode="a") as data_file:

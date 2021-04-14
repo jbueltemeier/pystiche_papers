@@ -55,7 +55,8 @@ def hyper_parameters() -> HyperParameters:
         ),
         content_transform=HyperParameters(image_size=512, edge="short"),
         style_transform=HyperParameters(edge_size=512, edge="short"),
-        batch_sampler=HyperParameters(num_batches=60000, batch_size=1),
+        batch_sampler=HyperParameters(num_batches=1, batch_size=1),
         transformer=HyperParameters(levels=2, type="ulyanov"),
-        loss=HyperParameters(mode="gram"),  # possible modes "gram", "mrf", "combi"
+        loss=HyperParameters(mode="combi"),  # possible modes "gram", "mrf", "combi"
+        regularization=HyperParameters(mode=False, score_weight=1e-6),
     )

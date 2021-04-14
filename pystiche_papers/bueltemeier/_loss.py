@@ -10,6 +10,7 @@ __all__ = [
     "content_loss",
     "gram_style_loss",
     "mrf_style_loss",
+    "regularization",
     "perceptual_loss",
 ]
 
@@ -79,6 +80,17 @@ def mrf_style_loss(
     )
 
 
+def regularization(
+    hyper_parameters: Optional[HyperParameters] = None,
+) -> ops.TotalVariationOperator:
+    if hyper_parameters is None:
+        hyper_parameters = _hyper_parameters()
+
+    return ops.TotalVariationOperator(
+        score_weight=hyper_parameters.regularization.score_weight
+    )
+
+
 def perceptual_loss(
     multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
     hyper_parameters: Optional[HyperParameters] = None,
@@ -117,9 +129,16 @@ def perceptual_loss(
             ]
         )
 
+    _regularization = (
+        regularization(hyper_parameters)
+        if hyper_parameters.regularization.mode
+        else None
+    )
+
     return loss.PerceptualLoss(
         content_loss(
             multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters,
         ),
         style_loss,
+        regularization=_regularization,
     )

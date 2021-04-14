@@ -228,9 +228,7 @@ def transformer(
             :func:`~pystiche_papers.ulyanov_et_al_2016.images`. If omitted, the
             transformer is initialized with random weights.
         levels: Number of levels in the transformer. Defaults to ``6``.
-
     """
-
     if levels is None:
         hyper_parameters = _hyper_parameters()
         levels = hyper_parameters.transformer.levels

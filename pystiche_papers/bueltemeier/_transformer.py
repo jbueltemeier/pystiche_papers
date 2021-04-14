@@ -11,6 +11,8 @@ from pystiche_papers.ulyanov_et_al_2016._modules import (
     join_channelwise,
     noise,
 )
+from ._utils import hyper_parameters as _hyper_parameters
+
 
 from ..utils import AutoPadConv2d, SequentialWithOutChannels
 
@@ -138,7 +140,7 @@ class BranchBlock(nn.Module):
 def level(
     prev_level_block: Optional[SequentialWithOutChannels],
     in_channels: int = 1,
-    num_noise_channels: int = 1,
+    num_noise_channels: int = 0,
     inplace: bool = True,
 ) -> SequentialWithOutChannels:
     def conv_sequence(
@@ -217,7 +219,7 @@ class Transformer(nn.Sequential):
         )
 
 
-def transformer(style: Optional[str] = None, levels: int = 6,) -> Transformer:
+def transformer(style: Optional[str] = None, levels: Optional[int] = None) -> Transformer:
     r"""Transformer from :cite:`ULVL2016,UVL2017`.
 
     Args:
@@ -227,4 +229,8 @@ def transformer(style: Optional[str] = None, levels: int = 6,) -> Transformer:
         levels: Number of levels in the transformer. Defaults to ``6``.
 
     """
+
+    if levels is None:
+        hyper_parameters = _hyper_parameters()
+        levels = hyper_parameters.transformer.levels
     return Transformer(levels)

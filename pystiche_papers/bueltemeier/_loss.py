@@ -89,30 +89,38 @@ def perceptual_loss(
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
 
-    # style_loss = ops.OperatorContainer(
-    #     [
-    #         (
-    #             "mrf_loss",
-    #             mrf_style_loss(
-    #                 multi_layer_encoder=multi_layer_encoder,
-    #                 hyper_parameters=hyper_parameters,
-    #             ),
-    #         ),
-    #         (
-    #             "gram_loss",
-    #             gram_style_loss(
-    #                 multi_layer_encoder=multi_layer_encoder,
-    #                 hyper_parameters=hyper_parameters,
-    #             ),
-    #         ),
-    #     ]
-    # )
+    if hyper_parameters.loss.mode == "gram":
+        style_loss = gram_style_loss(
+            multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters
+        )
+    elif hyper_parameters.loss.mode == "mrf":
+        style_loss = mrf_style_loss(
+            multi_layer_encoder=multi_layer_encoder,
+            hyper_parameters=hyper_parameters,
+        )
+    else: # hyper_parameters.loss.mode == "combi"
+        style_loss = ops.OperatorContainer(
+            [
+                (
+                    "mrf_loss",
+                    mrf_style_loss(
+                        multi_layer_encoder=multi_layer_encoder,
+                        hyper_parameters=hyper_parameters,
+                    ),
+                ),
+                (
+                    "gram_loss",
+                    gram_style_loss(
+                        multi_layer_encoder=multi_layer_encoder,
+                        hyper_parameters=hyper_parameters,
+                    ),
+                ),
+            ]
+        )
 
     return loss.PerceptualLoss(
         content_loss(
             multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters,
         ),
-        gram_style_loss(
-            multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters
-        ),
+        style_loss
     )

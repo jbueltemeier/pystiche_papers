@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from pystiche import loss, optim
+from pystiche import loss, optim, ops
 from pystiche.image.transforms.functional import grayscale_to_fakegrayscale
 from pystiche_papers.utils import HyperParameters
 
@@ -39,8 +39,11 @@ def training(
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
 
-    # transformer = _transformer()
-    transformer = _multiresolution_transformer()
+    if hyper_parameters.transformer.type == "ulyanov":
+        transformer = _multiresolution_transformer()
+    else:
+        transformer = _transformer()
+
     transformer = transformer.train()
     transformer = transformer.to(device)
 
@@ -55,7 +58,11 @@ def training(
     style_image = style_transform(style_image)
     style_image = batch_up_image(style_image, loader=content_image_loader)
 
-    criterion.set_style_image(style_image)
+    if ops.OperatorContainer == type(criterion.style_loss):
+        for op in criterion.style_loss.operators():
+            op.set_target_image(style_image)
+    else:
+        criterion.set_style_image(style_image)
 
     def criterion_update_fn(input_image: torch.Tensor, criterion: nn.Module) -> None:
         input_image = grayscale_to_fakegrayscale(input_image)

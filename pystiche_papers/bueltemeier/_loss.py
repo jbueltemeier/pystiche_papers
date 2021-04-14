@@ -95,10 +95,9 @@ def perceptual_loss(
         )
     elif hyper_parameters.loss.mode == "mrf":
         style_loss = mrf_style_loss(
-            multi_layer_encoder=multi_layer_encoder,
-            hyper_parameters=hyper_parameters,
+            multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters,
         )
-    else: # hyper_parameters.loss.mode == "combi"
+    else:  # hyper_parameters.loss.mode == "combi"
         style_loss = ops.OperatorContainer(
             [
                 (
@@ -122,5 +121,5 @@ def perceptual_loss(
         content_loss(
             multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters,
         ),
-        style_loss
+        style_loss,
     )

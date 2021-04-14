@@ -4,7 +4,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 
-from pystiche import loss, optim, ops
+from pystiche import loss, ops, optim
 from pystiche.image.transforms.functional import grayscale_to_fakegrayscale
 from pystiche_papers.utils import HyperParameters
 

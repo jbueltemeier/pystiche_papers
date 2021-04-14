@@ -11,10 +11,9 @@ from pystiche_papers.ulyanov_et_al_2016._modules import (
     join_channelwise,
     noise,
 )
-from ._utils import hyper_parameters as _hyper_parameters
-
 
 from ..utils import AutoPadConv2d, SequentialWithOutChannels
+from ._utils import hyper_parameters as _hyper_parameters
 
 __all__ = [
     "ConvBlock",
@@ -219,7 +218,9 @@ class Transformer(nn.Sequential):
         )
 
 
-def transformer(style: Optional[str] = None, levels: Optional[int] = None) -> Transformer:
+def transformer(
+    style: Optional[str] = None, levels: Optional[int] = None
+) -> Transformer:
     r"""Transformer from :cite:`ULVL2016,UVL2017`.
 
     Args:

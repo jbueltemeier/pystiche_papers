@@ -21,7 +21,7 @@ __all__ = [
     "JoinBlock",
     "BranchBlock",
     "level",
-    "Transformer",
+    "MultiScaleTransformer",
     "transformer",
 ]
 
@@ -179,7 +179,7 @@ def level(
     )
 
 
-class Transformer(nn.Sequential):
+class MultiScaleTransformer(nn.Sequential):
     def __init__(self, levels: int,) -> None:
         class ValueRangeDelimiter(nn.Module):
             def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -193,14 +193,11 @@ class Transformer(nn.Sequential):
         for _ in range(levels):
             pyramid = level(pyramid)
 
-        output_conv = cast(
-            Union[nn.Conv2d, ConvBlock],
-            ConvBlock(
-                cast(int, cast(SequentialWithOutChannels, pyramid).out_channels),
-                out_channels=1,
-                kernel_size=1,
-                stride=1,
-            ),
+        output_conv = nn.Conv2d(
+            cast(int, cast(SequentialWithOutChannels, pyramid).out_channels),
+            out_channels=1,
+            kernel_size=1,
+            stride=1,
         )
 
         super().__init__(
@@ -220,7 +217,7 @@ class Transformer(nn.Sequential):
 
 def transformer(
     style: Optional[str] = None, levels: Optional[int] = None
-) -> Transformer:
+) -> MultiScaleTransformer:
     r"""Transformer from :cite:`ULVL2016,UVL2017`.
 
     Args:
@@ -232,4 +229,4 @@ def transformer(
     if levels is None:
         hyper_parameters = _hyper_parameters()
         levels = hyper_parameters.transformer.levels
-    return Transformer(levels)
+    return MultiScaleTransformer(levels)

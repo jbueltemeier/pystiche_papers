@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from pystiche import enc, loss, ops
 from pystiche_papers.utils import HyperParameters
@@ -102,7 +102,9 @@ def perceptual_loss(
         hyper_parameters = _hyper_parameters()
 
     if hyper_parameters.loss.mode == "gram":
-        style_loss = gram_style_loss(
+        style_loss: Union[
+            ops.MultiLayerEncodingOperator, ops.Operator
+        ] = gram_style_loss(
             multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters
         )
     elif hyper_parameters.loss.mode == "mrf":

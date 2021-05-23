@@ -40,7 +40,7 @@ def training(
         hyper_parameters = _hyper_parameters()
 
     if hyper_parameters.transformer.type == "ulyanov":
-        transformer = _multiScaleTransformer()
+        transformer = _multiScaleTransformer(hyper_parameters.transformer.levels)
     else:
         transformer = _transformer()
 

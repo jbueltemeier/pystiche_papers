@@ -12,7 +12,7 @@ from pystiche_papers.bueltemeier._utils import hyper_parameters as _hyper_parame
 
 def training(args):
     contents = ("karya", "004", "04", "bueltemeier")
-    styles = ("UHD20", "DM100", "MAD20", "Specimen0")
+    styles = ("MAD20", "DM100", "Specimen0", "UHD20")
 
     dataset = paper.dataset(path.join(args.dataset_dir, "content"),)
     image_loader = paper.image_loader(

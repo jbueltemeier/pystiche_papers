@@ -5,6 +5,7 @@ from pystiche_papers.utils import HyperParameters
 
 from ._utils import hyper_parameters as _hyper_parameters
 from ._utils import multi_layer_encoder as _multi_layer_encoder
+from ._gabor import GaborMultiLayerEncoder
 
 __all__ = [
     "content_loss",
@@ -35,11 +36,16 @@ def gram_style_loss(
     multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
     hyper_parameters: Optional[HyperParameters] = None,
 ) -> ops.MultiLayerEncodingOperator:
+    if hyper_parameters is None:
+        hyper_parameters = _hyper_parameters()
+
     if multi_layer_encoder is None:
         multi_layer_encoder = _multi_layer_encoder()
 
-    if hyper_parameters is None:
-        hyper_parameters = _hyper_parameters()
+    if hyper_parameters.gram_style_loss.encoder == "gabor":
+        multi_layer_encoder = GaborMultiLayerEncoder()
+        hyper_parameters.gram_style_loss.layers = ("gabor",)
+        hyper_parameters.gram_style_loss.layer_weights = (1e9,)
 
     def get_encoding_op(encoder: enc.Encoder, layer_weight: float) -> ops.GramOperator:
         return ops.GramOperator(encoder, score_weight=layer_weight)
@@ -62,6 +68,10 @@ def mrf_style_loss(
 
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
+
+    if hyper_parameters.mrf_style_loss.encoder == "gabor":
+        multi_layer_encoder = GaborMultiLayerEncoder()
+        hyper_parameters.mrf_style_loss.layers = ("gabor",)
 
     def get_encoding_op(encoder: enc.Encoder, layer_weight: float) -> ops.MRFOperator:
         return ops.MRFOperator(

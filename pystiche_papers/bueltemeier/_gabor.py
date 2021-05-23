@@ -122,4 +122,4 @@ class GaborConv2d(Module):
 
 class GaborMultiLayerEncoder(MultiLayerEncoder):
     def __init__(self) -> None:
-        super().__init__([("gabor", GaborConv2d(in_channels=1, out_channels=96, kernel_size=(11, 11))),])
+        super().__init__([("gabor", GaborConv2d(in_channels=3, out_channels=96, kernel_size=(11, 11))),])

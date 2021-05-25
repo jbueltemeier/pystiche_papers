@@ -4,6 +4,8 @@ import torch
 from torch.nn import Parameter
 from torch.nn.modules import Conv2d, Module
 
+from matplotlib import pyplot
+
 from pystiche.enc.multi_layer_encoder import MultiLayerEncoder
 
 
@@ -122,4 +124,38 @@ class GaborConv2d(Module):
 
 class GaborMultiLayerEncoder(MultiLayerEncoder):
     def __init__(self) -> None:
-        super().__init__([("gabor", GaborConv2d(in_channels=3, out_channels=96, kernel_size=(11, 11))),])
+        super().__init__([("gabor", GaborConv2d(in_channels=3, out_channels=96, kernel_size=(5, 5))),])
+
+    def plot_filters(self):
+        filters = self.gabor.conv_layer.weight
+        # normalize filter values to 0-1 so we can visualize them
+        f_min, f_max = filters.min(), filters.max()
+        filters = (filters - f_min) / (f_max - f_min)
+        # plot first few filters
+        # n_filters = outgoing channels
+        outgoing_channels = 5
+        n_filters, ix = outgoing_channels, 1
+        for i in range(n_filters):
+            # get the filter
+            f = filters[i, :, :, :]
+            # plot each channel separately
+            # Range of incoming channels
+            incoming_channels = 4
+            for j in range(incoming_channels):
+                # Range of Depth of the kernel .i.e. 3
+                Depth = 3
+                for k in range(Depth):
+                    # specify subplot and turn of axis
+                    ax = pyplot.subplot((outgoing_channels*3), incoming_channels, ix)
+                    ax.set_xticks([])
+                    ax.set_yticks([])
+                    # plot filter channel in grayscale
+                    pyplot.imshow(f[k, :,:], cmap='gray')
+                    ix += 1
+        # show the figure
+        pyplot.show()
+
+
+model = GaborMultiLayerEncoder()
+model.gabor.calculate_weights()
+model.plot_filters()

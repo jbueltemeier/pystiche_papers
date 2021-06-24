@@ -63,6 +63,23 @@ def training(args):
             image.write_image(output_image, output_file)
 
 
+def image_training(args):
+    contents = ("karya", "004", "04", "bueltemeier")
+    styles = ("MAD20", "DM100", "Specimen0", "UHD20")
+
+    images = paper.images(args.image_source_dir)
+    hyper_parameters = _hyper_parameters()
+    for content in contents:
+        for style in styles:
+            content_image = images[content].read(device=args.device, size=hyper_parameters.nst.image_size)
+            style_image = images[style].read(device=args.device, size=hyper_parameters.nst.image_size)
+            output_image = paper.nst(content_image, style_image)
+
+            output_name = f"{style}_{content}"
+            output_file = path.join(args.image_results_dir, f"{output_name}.png")
+            image.write_image(output_image, output_file)
+
+
 def parse_input():
     # TODO: write CLI
     image_source_dir = None
@@ -107,4 +124,5 @@ def parse_input():
 
 if __name__ == "__main__":
     args = parse_input()
-    training(args)
+    # training(args)
+    image_training(args)

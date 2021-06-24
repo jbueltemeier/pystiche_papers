@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 from pystiche import loss, ops, optim
 from pystiche.image.transforms.functional import grayscale_to_fakegrayscale
 from pystiche_papers.utils import HyperParameters
+from pystiche import misc
 
 from ..utils import batch_up_image
 from ._data import content_transform as _content_transform
@@ -16,8 +17,9 @@ from ._modules import transformer as _transformer
 from ._transformer import MultiScaleTransformer as _multiScaleTransformer
 from ._utils import hyper_parameters as _hyper_parameters
 from ._utils import optimizer as _optimizer
+from ._utils import image_optimizer as _image_optimizer
 
-__all__ = ["training", "stylization"]
+__all__ = ["training", "stylization", "nst"]
 
 
 def training(
@@ -97,3 +99,48 @@ def stylization(input_image: torch.Tensor, transformer: nn.Module,) -> torch.Ten
         output_image = transformer(input_image)
 
     return cast(torch.Tensor, output_image).detach()
+
+
+def nst(
+        content_image: torch.Tensor,
+        style_image: torch.Tensor,
+        hyper_parameters: Optional[HyperParameters] = None,
+) -> torch.Tensor:
+    r"""NST from :cite:`GEB2016`.
+
+    Args:
+        content_image: Content image for the NST.
+        style_image: Style image for the NST.
+        hyper_parameters: If omitted,
+            :func:`~pystiche_papers.bueltemeier_2021.hyper_parameters` is used.
+
+    """
+    if hyper_parameters is None:
+        hyper_parameters = _hyper_parameters()
+
+    device = content_image.device
+
+    criterion = perceptual_loss(hyper_parameters=hyper_parameters)
+    criterion = criterion.to(device)
+
+    input_image = misc.get_input_image(
+        starting_point=hyper_parameters.nst.starting_point, content_image=content_image
+    )
+
+    content_transform = _content_transform(hyper_parameters=hyper_parameters)
+    content_transform = content_transform.to(device)
+    content_image = grayscale_to_fakegrayscale(content_transform(content_image))
+    criterion.set_content_image(content_image)
+
+    style_transform = _style_transform(hyper_parameters=hyper_parameters)
+    style_transform = style_transform.to(device)
+    style_image = style_transform(style_image)
+
+    criterion.set_style_image(style_image)
+
+    return optim.default_image_optim_loop(
+        input_image,
+        criterion,
+        get_optimizer=_image_optimizer,
+        num_steps=hyper_parameters.nst.num_steps,
+    )

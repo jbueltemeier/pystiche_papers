@@ -1,6 +1,7 @@
 from typing import Optional, Sequence, Tuple
 
 from torch import nn, optim
+import torch
 
 from pystiche import enc
 from pystiche_papers.gatys_ecker_bethge_2016 import (
@@ -17,6 +18,10 @@ __all__ = [
 
 def optimizer(transformer: nn.Module) -> optim.Adam:
     return optim.Adam(transformer.parameters(), lr=1e-3)
+
+
+def image_optimizer(input_image: torch.Tensor) -> optim.LBFGS:
+    return optim.LBFGS([input_image.requires_grad_(True)], lr=1.0, max_iter=1)
 
 
 def multi_layer_encoder() -> enc.VGGMultiLayerEncoder:
@@ -49,7 +54,7 @@ def hyper_parameters() -> HyperParameters:
         gabor_gram_style_loss=HyperParameters(
             layers=("gabor",),
             layer_weights="sum",
-            score_weight=1e4,
+            score_weight=1e8,
         ),
         mrf_style_loss=HyperParameters(
             layers=("relu3_1", "relu4_1"),
@@ -62,6 +67,11 @@ def hyper_parameters() -> HyperParameters:
         style_transform=HyperParameters(edge_size=512, edge="short"),
         batch_sampler=HyperParameters(num_batches=50000, batch_size=1),
         transformer=HyperParameters(levels=2, type="johnson"),
-        loss=HyperParameters(modes=["gram","mrf","gabor"]),  # possible modes "gram", "mrf", "gabor"
+        loss=HyperParameters(modes=["gabor",]),  # possible modes "gram", "mrf", "gabor"
         regularization=HyperParameters(mode=False, score_weight=1e-6),
+        nst=HyperParameters(
+            num_steps=500,
+            starting_point="content",
+            image_size=512,
+        ),
     )

@@ -155,7 +155,3 @@ class GaborMultiLayerEncoder(MultiLayerEncoder):
         # show the figure
         pyplot.show()
 
-
-model = GaborMultiLayerEncoder()
-model.gabor.calculate_weights()
-model.plot_filters()

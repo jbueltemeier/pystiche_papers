@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional
 
 from pystiche import enc, loss, ops
 from pystiche_papers.utils import HyperParameters
@@ -42,11 +42,6 @@ def gram_style_loss(
     if multi_layer_encoder is None:
         multi_layer_encoder = _multi_layer_encoder()
 
-    if hyper_parameters.gram_style_loss.encoder == "gabor":
-        multi_layer_encoder = GaborMultiLayerEncoder()
-        hyper_parameters.gram_style_loss.layers = ("gabor",)
-        hyper_parameters.gram_style_loss.layer_weights = (1e9,)
-
     def get_encoding_op(encoder: enc.Encoder, layer_weight: float) -> ops.GramOperator:
         return ops.GramOperator(encoder, score_weight=layer_weight)
 
@@ -59,6 +54,26 @@ def gram_style_loss(
     )
 
 
+def gabor_gram_style_loss(
+    hyper_parameters: Optional[HyperParameters] = None,
+) -> ops.MultiLayerEncodingOperator:
+    if hyper_parameters is None:
+        hyper_parameters = _hyper_parameters()
+
+    multi_layer_encoder = GaborMultiLayerEncoder()
+
+    def get_encoding_op(encoder: enc.Encoder, layer_weight: float) -> ops.GramOperator:
+        return ops.GramOperator(encoder, score_weight=layer_weight)
+
+    return ops.MultiLayerEncodingOperator(
+        multi_layer_encoder,
+        hyper_parameters.gabor_gram_style_loss.layers,
+        get_encoding_op,
+        layer_weights=hyper_parameters.gabor_gram_style_loss.layer_weights,
+        score_weight=hyper_parameters.gabor_gram_style_loss.score_weight,
+    )
+
+
 def mrf_style_loss(
     multi_layer_encoder: Optional[enc.MultiLayerEncoder] = None,
     hyper_parameters: Optional[HyperParameters] = None,
@@ -68,10 +83,6 @@ def mrf_style_loss(
 
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
-
-    if hyper_parameters.mrf_style_loss.encoder == "gabor":
-        multi_layer_encoder = GaborMultiLayerEncoder()
-        hyper_parameters.mrf_style_loss.layers = ("gabor",)
 
     def get_encoding_op(encoder: enc.Encoder, layer_weight: float) -> ops.MRFOperator:
         return ops.MRFOperator(
@@ -111,35 +122,39 @@ def perceptual_loss(
     if hyper_parameters is None:
         hyper_parameters = _hyper_parameters()
 
-    if hyper_parameters.loss.mode == "gram":
-        style_loss: Union[
-            ops.MultiLayerEncodingOperator, ops.Operator
-        ] = gram_style_loss(
-            multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters
-        )
-    elif hyper_parameters.loss.mode == "mrf":
-        style_loss = mrf_style_loss(
-            multi_layer_encoder=multi_layer_encoder, hyper_parameters=hyper_parameters,
-        )
-    else:  # hyper_parameters.loss.mode == "combi"
-        style_loss = ops.OperatorContainer(
-            [
-                (
-                    "mrf_loss",
-                    mrf_style_loss(
-                        multi_layer_encoder=multi_layer_encoder,
-                        hyper_parameters=hyper_parameters,
-                    ),
+    style_losses = []
+    if "gram" in hyper_parameters.loss.modes:
+        style_losses.append(
+            (
+                "gram_loss",
+                gram_style_loss(
+                    multi_layer_encoder=multi_layer_encoder,
+                    hyper_parameters=hyper_parameters,
                 ),
-                (
-                    "gram_loss",
-                    gram_style_loss(
-                        multi_layer_encoder=multi_layer_encoder,
-                        hyper_parameters=hyper_parameters,
-                    ),
-                ),
-            ]
+            )
         )
+
+    if "mrf" in hyper_parameters.loss.modes:
+        style_losses.append(
+            (
+                "mrf_loss",
+                mrf_style_loss(
+                    multi_layer_encoder=multi_layer_encoder,
+                    hyper_parameters=hyper_parameters,
+                ),
+            )
+        )
+
+    if "gabor" in hyper_parameters.loss.modes:
+        style_losses.append(
+            ("gabor_loss", gabor_gram_style_loss(hyper_parameters=hyper_parameters))
+        )
+
+    style_loss = (
+        ops.OperatorContainer(style_losses)
+        if len(style_losses) != 1
+        else style_losses[0][-1]
+    )
 
     _regularization = (
         regularization(hyper_parameters)

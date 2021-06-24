@@ -45,7 +45,11 @@ def hyper_parameters() -> HyperParameters:
             layers=gram_style_loss_layers,
             layer_weights=compute_layer_weights(gram_style_loss_layers),
             score_weight=1e1,
-            encoder="gabor"  # "gabor"
+        ),
+        gabor_gram_style_loss=HyperParameters(
+            layers=("gabor",),
+            layer_weights="sum",
+            score_weight=1e4,
         ),
         mrf_style_loss=HyperParameters(
             layers=("relu3_1", "relu4_1"),
@@ -53,12 +57,11 @@ def hyper_parameters() -> HyperParameters:
             patch_size=3,
             stride=2,
             score_weight=1e-4,
-            encoder="vgg19"  # "gabor"
         ),
         content_transform=HyperParameters(image_size=512, edge="short"),
         style_transform=HyperParameters(edge_size=512, edge="short"),
         batch_sampler=HyperParameters(num_batches=50000, batch_size=1),
         transformer=HyperParameters(levels=2, type="johnson"),
-        loss=HyperParameters(mode="gram"),  # possible modes "gram", "mrf", "combi"
+        loss=HyperParameters(modes=["gram","mrf","gabor"]),  # possible modes "gram", "mrf", "gabor"
         regularization=HyperParameters(mode=False, score_weight=1e-6),
     )
